@@ -3,10 +3,10 @@
 //  illuspas[a]msn.com
 //  Copyright (c) 2020 Nodemedia. All rights reserved.
 //
-const Logger = require('./node_core_logger');
+import Logger from './node_core_logger';
 
-const EventEmitter = require('events');
-const { spawn } = require('child_process');
+import EventEmitter from 'events';
+import {spawn} from 'child_process';
 
 class NodeFissionSession extends EventEmitter {
   constructor(conf) {
@@ -51,4 +51,4 @@ class NodeFissionSession extends EventEmitter {
   }
 }
 
-module.exports = NodeFissionSession;
+export default NodeFissionSession;

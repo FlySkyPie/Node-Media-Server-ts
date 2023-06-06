@@ -3,13 +3,13 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const Logger = require('./node_core_logger');
+import Logger from './node_core_logger';
 
-const EventEmitter = require('events');
-const { spawn } = require('child_process');
-const dateFormat = require('dateformat');
-const mkdirp = require('mkdirp');
-const fs = require('fs');
+import EventEmitter from 'events';
+import {spawn} from 'child_process';
+import dateFormat from 'dateformat';
+import mkdirp from 'mkdirp';
+import fs from 'fs';
 
 const isHlsFile = (filename) => filename.endsWith('.ts') || filename.endsWith('.m3u8')
 const isTemFiles = (filename) => filename.endsWith('.tmp')
@@ -129,4 +129,4 @@ class NodeTransSession extends EventEmitter {
   }
 }
 
-module.exports = NodeTransSession;
+export default NodeTransSession;

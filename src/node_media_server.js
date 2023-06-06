@@ -4,15 +4,16 @@
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
 
-const Https = require('https');
-const Logger = require('./node_core_logger');
-const NodeRtmpServer = require('./node_rtmp_server');
-const NodeHttpServer = require('./node_http_server');
-const NodeTransServer = require('./node_trans_server');
-const NodeRelayServer = require('./node_relay_server');
-const NodeFissionServer = require('./node_fission_server');
-const context = require('./node_core_ctx');
-const Package = require('../package.json');
+import Https from 'https';
+
+import Logger from './node_core_logger';
+import NodeRtmpServer from './node_rtmp_server';
+import NodeHttpServer from './node_http_server';
+import NodeTransServer from './node_trans_server';
+import NodeRelayServer from './node_relay_server';
+import NodeFissionServer from './node_fission_server';
+import context from './node_core_ctx';
+import Package from '../package.json';
 
 class NodeMediaServer {
   constructor(config) {
@@ -112,4 +113,4 @@ class NodeMediaServer {
   }
 }
 
-module.exports = NodeMediaServer;
+export default NodeMediaServer;

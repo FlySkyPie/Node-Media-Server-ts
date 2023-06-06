@@ -50,4 +50,4 @@ class Bitop {
   }
 }
 
-module.exports = Bitop;
+export default Bitop;

@@ -3,7 +3,7 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const Crypto = require('crypto');
+import Crypto from 'crypto';
 
 const MESSAGE_FORMAT_0 = 0;
 const MESSAGE_FORMAT_1 = 1;
@@ -108,4 +108,4 @@ function generateS0S1S2(clientsig) {
   return allBytes;
 }
 
-module.exports = { generateS0S1S2 };
+export default { generateS0S1S2 };

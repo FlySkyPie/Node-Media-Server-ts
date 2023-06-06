@@ -4,8 +4,9 @@
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
 
-const OS = require('os');
-const Package = require('../../../package.json');
+import OS from 'os';
+
+import Package from '../../../package.json';
 function cpuAverage() {
 
   //Initialise sum of idle and time of cores and fetch CPU info
@@ -113,4 +114,4 @@ function getInfo(req, res, next) {
   });
 }
 
-exports.getInfo = getInfo;
+export {getInfo};

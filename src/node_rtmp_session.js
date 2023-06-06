@@ -4,16 +4,16 @@
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
 
-const QueryString = require('querystring');
-const AV = require('./node_core_av');
-const { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } = require('./node_core_av');
+import QueryString from 'querystring';
 
-const AMF = require('./node_core_amf');
-const Handshake = require('./node_rtmp_handshake');
-const NodeCoreUtils = require('./node_core_utils');
-const NodeFlvSession = require('./node_flv_session');
-const context = require('./node_core_ctx');
-const Logger = require('./node_core_logger');
+import AV from './node_core_av';
+import {AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME} from './node_core_av';
+import AMF from './node_core_amf';
+import Handshake from './node_rtmp_handshake';
+import NodeCoreUtils from './node_core_utils';
+import NodeFlvSession from './node_flv_session';
+import context from './node_core_ctx';
+import Logger from './node_core_logger';
 
 const N_CHUNK_STREAM = 8;
 const RTMP_VERSION = 3;
@@ -1369,4 +1369,4 @@ class NodeRtmpSession {
   }
 }
 
-module.exports = NodeRtmpSession;
+export default NodeRtmpSession;

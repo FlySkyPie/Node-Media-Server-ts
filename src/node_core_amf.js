@@ -2,7 +2,7 @@
  * Created by delian on 3/12/14.
  * This module provides encoding and decoding of the AMF0 and AMF3 format
  */
-const Logger = require('./node_core_logger');
+import Logger from './node_core_logger';
 
 const amf3dRules = {
   0x00: amf3decUndefined,
@@ -1110,7 +1110,7 @@ function encodeAMF3Cmd(opt) {
   return data;
 }
 
-module.exports = {
+export default {
   decodeAmf3Cmd: decodeAMF3Cmd,
   encodeAmf3Cmd: encodeAMF3Cmd,
   decodeAmf0Cmd: decodeAMF0Cmd,

@@ -1,4 +1,4 @@
-const chalk = require('chalk');
+import chalk from 'chalk';
 
 const LOG_TYPES = {
   NONE: 0,
@@ -45,7 +45,7 @@ const ffdebug = (...args) => {
   console.log(logTime(), process.pid, chalk.bold.blue('[FFDEBUG]'), ...args);
 };
 
-module.exports = {
+export default {
   LOG_TYPES,
   setLogType,
 

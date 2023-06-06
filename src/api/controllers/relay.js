@@ -3,9 +3,10 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2019 Nodemedia. All rights reserved.
 //
-const { get, set } = require('lodash');
-const Express = require('express');
-const { once } = require('events');
+import {get, set} from 'lodash';
+
+import Express from 'express';
+import {once} from 'events';
 
 /**
  * get all relay tasks
@@ -164,7 +165,7 @@ function delStream(req, res, next) {
   }
 }
 
-module.exports = {
+export default {
   getStreams,
   getStreamByID,
   getStreamByName,

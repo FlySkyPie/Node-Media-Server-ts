@@ -3,15 +3,15 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const Logger = require('./node_core_logger');
+import Logger from './node_core_logger';
 
-const NodeCoreUtils = require('./node_core_utils');
-const NodeRelaySession = require('./node_relay_session');
-const context = require('./node_core_ctx');
-const { getFFmpegVersion, getFFmpegUrl } = require('./node_core_utils');
-const fs = require('fs');
-const querystring = require('querystring');
-const _ = require('lodash');
+import NodeCoreUtils from './node_core_utils';
+import NodeRelaySession from './node_relay_session';
+import context from './node_core_ctx';
+import {getFFmpegVersion, getFFmpegUrl} from './node_core_utils';
+import fs from 'fs';
+import querystring from 'querystring';
+import _ from 'lodash';
 
 class NodeRelayServer {
   constructor(config) {
@@ -234,4 +234,4 @@ class NodeRelayServer {
   }
 }
 
-module.exports = NodeRelayServer;
+export default NodeRelayServer;

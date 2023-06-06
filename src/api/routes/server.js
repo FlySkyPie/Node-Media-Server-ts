@@ -1,7 +1,7 @@
-const express = require('express');
-const serverController = require('../controllers/server');
+import express from 'express';
+import serverController from '../controllers/server';
 
-module.exports = (context) => {
+export default (context) => {
   let router = express.Router();
   router.get('/', serverController.getInfo.bind(context));
   return router;

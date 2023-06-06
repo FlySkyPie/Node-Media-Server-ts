@@ -1,5 +1,5 @@
-const _ = require('lodash');
-const NodeTransServer = require('../../node_trans_server');
+import _ from 'lodash';
+import NodeTransServer from '../../node_trans_server';
 
 function postStreamTrans(req, res, next) {
   let config = req.body;
@@ -160,7 +160,7 @@ function delStream(req, res, next) {
   }
 }
 
-exports.delStream = delStream;
-exports.getStreams = getStreams;
-exports.getStream = getStream;
-exports.postStreamTrans = postStreamTrans;
+export {delStream};
+export {getStreams};
+export {getStream};
+export {postStreamTrans};

@@ -3,14 +3,13 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const Logger = require('./node_core_logger');
+import Logger from './node_core_logger';
 
-const Tls = require('tls');
-const Fs = require('fs');
-const Net = require('net');
-const NodeRtmpSession = require('./node_rtmp_session');
-
-const context = require('./node_core_ctx');
+import Tls from 'tls';
+import Fs from 'fs';
+import Net from 'net';
+import NodeRtmpSession from './node_rtmp_session';
+import context from './node_core_ctx';
 
 const RTMP_PORT = 1935;
 const RTMPS_PORT = 443;
@@ -82,4 +81,4 @@ class NodeRtmpServer {
   }
 }
 
-module.exports = NodeRtmpServer;
+export default NodeRtmpServer;

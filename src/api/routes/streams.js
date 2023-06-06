@@ -1,7 +1,7 @@
-const express = require('express');
-const streamController = require('../controllers/streams');
+import express from 'express';
+import streamController from '../controllers/streams';
 
-module.exports = (context) => {
+export default (context) => {
   let router = express.Router();
   router.post('/trans', streamController.postStreamTrans.bind(context));
   router.get('/', streamController.getStreams.bind(context));

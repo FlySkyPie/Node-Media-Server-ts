@@ -4,7 +4,8 @@
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
 
-const Bitop = require('./node_core_bitop');
+import Bitop from './node_core_bitop';
+
 const AAC_SAMPLE_RATE = [
   96000, 88200, 64000, 48000,
   44100, 32000, 24000, 22050,
@@ -507,7 +508,7 @@ function getAVCProfileName(info) {
   }
 }
 
-module.exports = {
+export default {
   AUDIO_SOUND_RATE,
   AUDIO_CODEC_NAME,
   VIDEO_CODEC_NAME,

@@ -3,9 +3,10 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const Crypto = require('crypto');
-const { spawn } = require('child_process');
-const context = require('./node_core_ctx');
+import Crypto from 'crypto';
+
+import {spawn} from 'child_process';
+import context from './node_core_ctx';
 
 function generateNewSessionID() {
   let sessionID = '';
@@ -84,7 +85,7 @@ function getFFmpegUrl() {
   return url;
 }
 
-module.exports = {
+export default {
   generateNewSessionID,
   verifyAuth,
   genRandomName,

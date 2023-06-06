@@ -3,14 +3,14 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const Logger = require('./node_core_logger');
+import Logger from './node_core_logger';
 
-const NodeTransSession = require('./node_trans_session');
-const context = require('./node_core_ctx');
-const { getFFmpegVersion, getFFmpegUrl } = require('./node_core_utils');
-const fs = require('fs');
-const _ = require('lodash');
-const mkdirp = require('mkdirp');
+import NodeTransSession from './node_trans_session';
+import context from './node_core_ctx';
+import {getFFmpegVersion, getFFmpegUrl} from './node_core_utils';
+import fs from 'fs';
+import _ from 'lodash';
+import mkdirp from 'mkdirp';
 
 class NodeTransServer {
   constructor(config) {
@@ -84,4 +84,4 @@ class NodeTransServer {
   }
 }
 
-module.exports = NodeTransServer;
+export default NodeTransServer;
