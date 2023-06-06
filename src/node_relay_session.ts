@@ -7,11 +7,19 @@ import Logger from './node_core_logger';
 
 import NodeCoreUtils from './node_core_utils';
 import EventEmitter from 'events';
-import {spawn} from 'child_process';
+import { spawn } from 'child_process';
 
 const RTSP_TRANSPORT = ['udp', 'tcp', 'udp_multicast', 'http'];
 
 class NodeRelaySession extends EventEmitter {
+  public conf: any;
+  public id: any;
+  public ts: any;
+  public TAG: any;
+  public ffmpeg_exec: any;
+  public emit: any;
+  public streamPath: any;
+
   constructor(conf) {
     super();
     this.conf = conf;
@@ -38,7 +46,7 @@ class NodeRelaySession extends EventEmitter {
     Logger.log('[relay task] id=' + this.id, 'cmd=ffmpeg', argv.join(' '));
 
     this.ffmpeg_exec = spawn(this.conf.ffmpeg, argv);
-    this.ffmpeg_exec.on('error', (e) => {
+    this.ffmpeg_exec.on('error', (e: any) => {
       Logger.ffdebug(e);
     });
 

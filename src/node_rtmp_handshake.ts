@@ -79,7 +79,7 @@ function generateS1(messageFormat) {
   return handshakeBytes;
 }
 
-function generateS2(messageFormat, clientsig, callback) {
+function generateS2(messageFormat, clientsig, callback?) {
   let randomBytes = Crypto.randomBytes(RTMP_SIG_SIZE - 32);
   let challengeKeyOffset;
   if (messageFormat === 1) {

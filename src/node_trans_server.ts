@@ -3,17 +3,22 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-import Logger from './node_core_logger';
-
-import NodeTransSession from './node_trans_session';
-import context from './node_core_ctx';
-import {getFFmpegVersion, getFFmpegUrl} from './node_core_utils';
 import fs from 'fs';
 import _ from 'lodash';
 import mkdirp from 'mkdirp';
 
+
+import Logger from './node_core_logger';
+
+import NodeTransSession from './node_trans_session';
+import context from './node_core_ctx';
+import { getFFmpegVersion, getFFmpegUrl } from './node_core_utils';
+
 class NodeTransServer {
-  constructor(config) {
+  public config: any;
+  public transSessions: any;
+
+  constructor(config: any) {
     this.config = config;
     this.transSessions = new Map();
   }
@@ -34,7 +39,7 @@ class NodeTransServer {
       return;
     }
 
-    let version = await getFFmpegVersion(this.config.trans.ffmpeg);
+    let version: string = await getFFmpegVersion(this.config.trans.ffmpeg) as string;
     if (version === '' || parseInt(version.split('.')[0]) < 4) {
       Logger.error('Node Media Trans Server startup failed. ffmpeg requires version 4.0.0 above');
       Logger.error('Download the latest ffmpeg static program:', getFFmpegUrl());
@@ -52,7 +57,7 @@ class NodeTransServer {
     Logger.log(`Node Media Trans Server started for apps: [ ${apps}] , MediaRoot: ${this.config.http.mediaroot}, ffmpeg version: ${version}`);
   }
 
-  onPostPublish(id, streamPath, args) {
+  onPostPublish(id: any, streamPath?: any, args?: any) {
     let regRes = /\/(.*)\/(.*)/gi.exec(streamPath);
     let [app, name] = _.slice(regRes, 1);
     let i = this.config.trans.tasks.length;
@@ -76,7 +81,7 @@ class NodeTransServer {
     }
   }
 
-  onDonePublish(id, streamPath, args) {
+  onDonePublish(id: any, streamPath?: any, args?: any) {
     let session = this.transSessions.get(id);
     if (session) {
       session.end();

@@ -5,7 +5,7 @@
 //
 import Crypto from 'crypto';
 
-import {spawn} from 'child_process';
+import { spawn } from 'child_process';
 import context from './node_core_ctx';
 
 function generateNewSessionID() {
@@ -31,7 +31,7 @@ function genRandomName() {
   return name;
 }
 
-function verifyAuth(signStr, streamId, secretKey) {
+function verifyAuth(signStr: string | undefined, streamId: string, secretKey: string) {
   if (signStr === undefined) {
     return false;
   }
@@ -47,11 +47,11 @@ function verifyAuth(signStr, streamId, secretKey) {
   return shv === ohv;
 }
 
-function getFFmpegVersion(ffpath) {
+export function getFFmpegVersion(ffpath: string) {
   return new Promise((resolve, reject) => {
     let ffmpeg_exec = spawn(ffpath, ['-version']);
     let version = '';
-    ffmpeg_exec.on('error', (e) => {
+    ffmpeg_exec.on('error', (e: any) => {
       reject(e);
     });
     ffmpeg_exec.stdout.on('data', (data) => {
@@ -66,7 +66,7 @@ function getFFmpegVersion(ffpath) {
   });
 }
 
-function getFFmpegUrl() {
+export function getFFmpegUrl() {
   let url = '';
   switch (process.platform) {
     case 'darwin':

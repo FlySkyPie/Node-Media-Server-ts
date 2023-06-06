@@ -9,6 +9,10 @@ import EventEmitter from 'events';
 import {spawn} from 'child_process';
 
 class NodeFissionSession extends EventEmitter {
+	public conf: any;
+	public ffmpeg_exec: any;
+	public emit: any;
+
   constructor(conf) {
     super();
     this.conf = conf;
@@ -28,7 +32,7 @@ class NodeFissionSession extends EventEmitter {
 
     argv = argv.filter((n) => { return n; });
     this.ffmpeg_exec = spawn(this.conf.ffmpeg, argv);
-    this.ffmpeg_exec.on('error', (e) => {
+    this.ffmpeg_exec.on('error', (e:any) => {
       Logger.ffdebug(e);
     });
 

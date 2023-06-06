@@ -14,6 +14,7 @@ import WebSocket from 'ws';
 import Express from 'express';
 import bodyParser from 'body-parser';
 import basicAuth from 'basic-auth-connect';
+
 import NodeFlvSession from './node_flv_session';
 const HTTP_PORT = 80;
 const HTTPS_PORT = 443;
@@ -25,7 +26,16 @@ import serverRoute from './api/routes/server';
 import relayRoute from './api/routes/relay';
 
 class NodeHttpServer {
-  constructor(config) {
+  public port: any;
+  public mediaroot: any;
+  public config: any;
+  public httpServer: any;
+  public sport: any;
+  public httpsServer: any;
+  public wsServer: any;
+  public wssServer: any;
+
+  constructor(config: any) {
     this.port = config.http.port || HTTP_PORT;
     this.mediaroot = config.http.mediaroot || HTTP_MEDIAROOT;
     this.config = config;
@@ -39,12 +49,12 @@ class NodeHttpServer {
       res.header('Access-Control-Allow-Origin', this.config.http.allow_origin);
       res.header('Access-Control-Allow-Headers', 'Content-Type,Content-Length, Authorization, Accept,X-Requested-With');
       res.header('Access-Control-Allow-Methods', 'PUT,POST,GET,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Credentials', true);
+      res.header('Access-Control-Allow-Credentials', "true");
       req.method === 'OPTIONS' ? res.sendStatus(200) : next();
     });
 
     app.get('*.flv', (req, res, next) => {
-      req.nmsConnectionType = 'http';
+      (req as any).nmsConnectionType = 'http';
       this.onConnect(req, res);
     });
 
@@ -92,7 +102,7 @@ class NodeHttpServer {
       Logger.log(`Node Media Http Server started on port: ${this.port}`);
     });
 
-    this.httpServer.on('error', (e) => {
+    this.httpServer.on('error', (e: any) => {
       Logger.error(`Node Media Http Server ${e}`);
     });
 
@@ -102,7 +112,7 @@ class NodeHttpServer {
 
     this.wsServer = new WebSocket.Server({ server: this.httpServer });
 
-    this.wsServer.on('connection', (ws, req) => {
+    this.wsServer.on('connection', (ws: any, req: any) => {
       req.nmsConnectionType = 'ws';
       this.onConnect(req, ws);
     });
@@ -110,7 +120,7 @@ class NodeHttpServer {
     this.wsServer.on('listening', () => {
       Logger.log(`Node Media WebSocket Server started on port: ${this.port}`);
     });
-    this.wsServer.on('error', (e) => {
+    this.wsServer.on('error', (e: any) => {
       Logger.error(`Node Media WebSocket Server ${e}`);
     });
 
@@ -119,7 +129,7 @@ class NodeHttpServer {
         Logger.log(`Node Media Https Server started on port: ${this.sport}`);
       });
 
-      this.httpsServer.on('error', (e) => {
+      this.httpsServer.on('error', (e: any) => {
         Logger.error(`Node Media Https Server ${e}`);
       });
 
@@ -129,7 +139,7 @@ class NodeHttpServer {
 
       this.wssServer = new WebSocket.Server({ server: this.httpsServer });
 
-      this.wssServer.on('connection', (ws, req) => {
+      this.wssServer.on('connection', (ws: any, req: any) => {
         req.nmsConnectionType = 'ws';
         this.onConnect(req, ws);
       });
@@ -137,7 +147,7 @@ class NodeHttpServer {
       this.wssServer.on('listening', () => {
         Logger.log(`Node Media WebSocketSecure Server started on port: ${this.sport}`);
       });
-      this.wssServer.on('error', (e) => {
+      this.wssServer.on('error', (e: any) => {
         Logger.error(`Node Media WebSocketSecure Server ${e}`);
       });
     }
@@ -171,7 +181,7 @@ class NodeHttpServer {
     });
   }
 
-  onConnect(req, res) {
+  onConnect(req: any, res: any) {
     let session = new NodeFlvSession(this.config, req, res);
     session.run();
 

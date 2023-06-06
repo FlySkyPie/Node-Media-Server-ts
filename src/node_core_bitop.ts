@@ -1,5 +1,11 @@
 
 class Bitop {
+	public buffer: any;
+	public buflen: any;
+	public bufpos: any;
+	public bufoff: any;
+	public iserro: any;
+
   constructor(buffer) {
     this.buffer = buffer;
     this.buflen = buffer.length;

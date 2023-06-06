@@ -3,18 +3,23 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-import Logger from './node_core_logger';
-
-import NodeCoreUtils from './node_core_utils';
-import NodeRelaySession from './node_relay_session';
-import context from './node_core_ctx';
-import {getFFmpegVersion, getFFmpegUrl} from './node_core_utils';
 import fs from 'fs';
 import querystring from 'querystring';
 import _ from 'lodash';
 
+import Logger from './node_core_logger';
+import NodeCoreUtils from './node_core_utils';
+import NodeRelaySession from './node_relay_session';
+import context from './node_core_ctx';
+import { getFFmpegVersion, getFFmpegUrl } from './node_core_utils';
+
 class NodeRelayServer {
-  constructor(config) {
+  public config: any;
+  public staticCycle: any;
+  public staticSessions: any;
+  public dynamicSessions: any;
+
+  constructor(config: any) {
     this.config = config;
     this.staticCycle = null;
     this.staticSessions = new Map();
@@ -29,7 +34,7 @@ class NodeRelayServer {
       return;
     }
 
-    let version = await getFFmpegVersion(this.config.relay.ffmpeg);
+    let version = await getFFmpegVersion(this.config.relay.ffmpeg) as string;
     if (version === '' || parseInt(version.split('.')[0]) < 4) {
       Logger.error('Node Media Relay Server startup failed. ffmpeg requires version 4.0.0 above');
       Logger.error('Download the latest ffmpeg static program:', getFFmpegUrl());
@@ -77,8 +82,8 @@ class NodeRelayServer {
     }
   }
 
-  onRelayTask(path, url) {
-    let conf = {};
+  onRelayTask(path: string, url?: string) {
+    let conf: any = {};
     conf.ffmpeg = this.config.relay.ffmpeg;
     conf.app = '-';
     conf.name = '-';
@@ -98,14 +103,14 @@ class NodeRelayServer {
   }
 
   //从远端拉推到本地
-  onRelayPull(url, app, name, rtsp_transport) {
-    let conf = {};
+  onRelayPull(url: any, app?: any, name?: any, rtsp_transport?: any) {
+    let conf: any = {};
     conf.app = app;
     conf.name = name;
     conf.mode = 'pull';
     conf.ffmpeg = this.config.relay.ffmpeg;
     conf.inPath = url;
-    if (rtsp_transport){
+    if (rtsp_transport) {
       conf.rtsp_transport = rtsp_transport
     }
     conf.ouPath = `rtmp://127.0.0.1:${this.config.rtmp.port}/${app}/${name}`;
@@ -120,12 +125,12 @@ class NodeRelayServer {
     session.run();
     Logger.log('[relay dynamic pull] start id=' + id, conf.inPath, 'to', conf.ouPath);
     context.nodeEvent.emit("relayPullDone", id);
-    
+
   }
 
   //从本地拉推到远端
-  onRelayPush(url, app, name) {
-    let conf = {};
+  onRelayPush(url: any, app?: any, name?: any) {
+    let conf: any = {};
     conf.app = app;
     conf.name = name;
     conf.mode = 'push';
@@ -145,7 +150,7 @@ class NodeRelayServer {
     context.nodeEvent.emit("relayPushDone", id);
   }
 
-  onPrePlay(id, streamPath, args) {
+  onPrePlay(id: any, streamPath?: any, args?: any) {
     if (!this.config.relay.tasks) {
       return;
     }
@@ -176,7 +181,7 @@ class NodeRelayServer {
     }
   }
 
-  onDonePlay(id, streamPath, args) {
+  onDonePlay(id: any, streamPath?: any, args?: any) {
     let session = this.dynamicSessions.get(id);
     let publisher = context.sessions.get(context.publishers.get(streamPath));
     if (session && publisher.players.size == 0) {
@@ -184,7 +189,7 @@ class NodeRelayServer {
     }
   }
 
-  onPostPublish(id, streamPath, args) {
+  onPostPublish(id: any, streamPath?: any, args?: any) {
     if (!this.config.relay.tasks) {
       return;
     }
@@ -216,7 +221,7 @@ class NodeRelayServer {
 
   }
 
-  onDonePublish(id, streamPath, args) {
+  onDonePublish(id: any, streamPath?: any, args?: any) {
     let session = this.dynamicSessions.get(id);
     if (session) {
       session.end();

@@ -3,17 +3,20 @@
 //  illuspas[a]msn.com
 //  Copyright (c) 2020 Nodemedia. All rights reserved.
 //
-import Logger from './node_core_logger';
-
-import NodeFissionSession from './node_fission_session';
-import context from './node_core_ctx';
-import {getFFmpegVersion, getFFmpegUrl} from './node_core_utils';
 import fs from 'fs';
 import _ from 'lodash';
 import mkdirp from 'mkdirp';
 
+import Logger from './node_core_logger';
+import NodeFissionSession from './node_fission_session';
+import context from './node_core_ctx';
+import { getFFmpegVersion, getFFmpegUrl } from './node_core_utils';
+
 class NodeFissionServer {
-  constructor(config) {
+  public config: any;
+  public fissionSessions: any;
+
+  constructor(config: any) {
     this.config = config;
     this.fissionSessions = new Map();
   }
@@ -34,7 +37,7 @@ class NodeFissionServer {
       return;
     }
 
-    let version = await getFFmpegVersion(this.config.fission.ffmpeg);
+    let version = await getFFmpegVersion(this.config.fission.ffmpeg) as string;
     if (version === '' || parseInt(version.split('.')[0]) < 4) {
       Logger.error('Node Media Fission Server startup failed. ffmpeg requires version 4.0.0 above');
       Logger.error('Download the latest ffmpeg static program:', getFFmpegUrl());
@@ -46,7 +49,7 @@ class NodeFissionServer {
     Logger.log(`Node Media Fission Server started, MediaRoot: ${this.config.http.mediaroot}, ffmpeg version: ${version}`);
   }
 
-  onPostPublish(id, streamPath, args) {
+  onPostPublish(id: any, streamPath?: any, args?: any) {
     let regRes = /\/(.*)\/(.*)/gi.exec(streamPath);
     let [app, name] = _.slice(regRes, 1);
     for (let task of this.config.fission.tasks) {
@@ -75,7 +78,7 @@ class NodeFissionServer {
     }
   }
 
-  onDonePublish(id, streamPath, args) {
+  onDonePublish(id: any, streamPath?: any, args?: any) {
     let session = this.fissionSessions.get(id);
     if (session) {
       session.end();
@@ -83,7 +86,7 @@ class NodeFissionServer {
   }
 
   stop() {
-    this.fissionSessions.forEach(session => {
+    this.fissionSessions.forEach((session: any) => {
       session.end();
     })
   }

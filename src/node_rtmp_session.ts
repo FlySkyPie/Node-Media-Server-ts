@@ -115,6 +115,73 @@ const RtmpPacket = {
 };
 
 class NodeRtmpSession {
+	public config: any;
+	public socket: any;
+	public res: any;
+	public id: any;
+	public ip: any;
+	public TAG: any;
+	public handshakePayload: any;
+	public handshakeState: any;
+	public handshakeBytes: any;
+	public parserBuffer: any;
+	public parserState: any;
+	public parserBytes: any;
+	public parserBasicBytes: any;
+	public parserPacket: any;
+	public inPackets: any;
+	public inChunkSize: any;
+	public outChunkSize: any;
+	public pingTime: any;
+	public pingTimeout: any;
+	public pingInterval: any;
+	public isLocal: any;
+	public isStarting: any;
+	public isPublishing: any;
+	public isPlaying: any;
+	public isIdling: any;
+	public isPause: any;
+	public isReceiveAudio: any;
+	public isReceiveVideo: any;
+	public metaData: any;
+	public aacSequenceHeader: any;
+	public avcSequenceHeader: any;
+	public audioCodec: any;
+	public audioCodecName: any;
+	public audioProfileName: any;
+	public audioSamplerate: any;
+	public audioChannels: any;
+	public videoCodec: any;
+	public videoCodecName: any;
+	public videoProfileName: any;
+	public videoWidth: any;
+	public videoHeight: any;
+	public videoFps: any;
+	public videoCount: any;
+	public videoLevel: any;
+	public bitrate: any;
+	public ackSize: any;
+	public inAckSize: any;
+	public inLastAck: any;
+	public appname: any;
+	public streams: any;
+	public playStreamId: any;
+	public playStreamPath: any;
+	public playArgs: any;
+	public publishStreamId: any;
+	public publishStreamPath: any;
+	public publishArgs: any;
+	public players: any;
+	public numPlayCache: any;
+	public bitrateCache: any;
+	public rtmpGopCacheQueue: any;
+	public flvGopCacheQueue: any;
+	public connectCmdObj: any;
+	public isFirstAudioReceived: any;
+	public startTimestamp: any;
+	public objectEncoding: any;
+	public connectTime: any;
+
   constructor(config, socket) {
     this.config = config;
     this.socket = socket;
@@ -1004,7 +1071,7 @@ class NodeRtmpSession {
     this.socket.write(chunks);
   }
 
-  sendStatusMessage(sid, level, code, description) {
+  sendStatusMessage(sid, level, code, description?) {
     let opt = {
       cmd: 'onStatus',
       transId: 0,
@@ -1018,7 +1085,7 @@ class NodeRtmpSession {
     this.sendInvokeMessage(sid, opt);
   }
 
-  sendRtmpSampleAccess(sid) {
+  sendRtmpSampleAccess(sid?) {
     let opt = {
       cmd: '|RtmpSampleAccess',
       bool1: false,

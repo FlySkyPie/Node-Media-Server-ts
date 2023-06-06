@@ -6,6 +6,8 @@
 
 import Https from 'https';
 
+import Package from '../package.json';
+
 import Logger from './node_core_logger';
 import NodeRtmpServer from './node_rtmp_server';
 import NodeHttpServer from './node_http_server';
@@ -13,10 +15,16 @@ import NodeTransServer from './node_trans_server';
 import NodeRelayServer from './node_relay_server';
 import NodeFissionServer from './node_fission_server';
 import context from './node_core_ctx';
-import Package from '../package.json';
 
 class NodeMediaServer {
-  constructor(config) {
+  public config: any;
+  public nrs: any;
+  public nhs: any;
+  public nts: any;
+  public nls: any;
+  public nfs: any;
+
+  constructor(config: any) {
     this.config = config;
   }
 
@@ -64,13 +72,13 @@ class NodeMediaServer {
       Logger.error('uncaughtException', err);
     });
 
-    process.on('SIGINT', function() {
+    process.on('SIGINT', function () {
       process.exit();
     });
 
     Https.get('https://registry.npmjs.org/node-media-server', function (res) {
       let size = 0;
-      let chunks = [];
+      let chunks: any[] = [];
       res.on('data', function (chunk) {
         size += chunk.length;
         chunks.push(chunk);
@@ -80,7 +88,11 @@ class NodeMediaServer {
         let jsonData = JSON.parse(data.toString());
         let latestVersion = jsonData['dist-tags']['latest'];
         let latestVersionNum = latestVersion.split('.')[0] << 16 | latestVersion.split('.')[1] << 8 | latestVersion.split('.')[2] & 0xff;
-        let thisVersionNum = Package.version.split('.')[0] << 16 | Package.version.split('.')[1] << 8 | Package.version.split('.')[2] & 0xff;
+        let thisVersionNum =
+          parseInt(Package.version.split('.')[0]) << 16 |
+          parseInt(Package.version.split('.')[1]) << 8 |
+          parseInt(Package.version.split('.')[2]) &
+          0xff;
         if (thisVersionNum < latestVersionNum) {
           Logger.log(`There is a new version ${latestVersion} that can be updated`);
         }
@@ -89,7 +101,7 @@ class NodeMediaServer {
     });
   }
 
-  on(eventName, listener) {
+  on(eventName: any, listener: any) {
     context.nodeEvent.on(eventName, listener);
   }
 
@@ -108,7 +120,7 @@ class NodeMediaServer {
     }
   }
 
-  getSession(id) {
+  getSession(id: any) {
     return context.sessions.get(id);
   }
 }

@@ -23,6 +23,21 @@ const FlvPacket = {
 };
 
 class NodeFlvSession {
+	public config: any;
+	public req: any;
+	public res: any;
+	public id: any;
+	public ip: any;
+	public playStreamPath: any;
+	public playArgs: any;
+	public isStarting: any;
+	public isPlaying: any;
+	public isIdling: any;
+	public TAG: any;
+	public numPlayCache: any;
+	public connectCmdObj: any;
+	public connectTime: any;
+
   constructor(config, req, res) {
     this.config = config;
     this.req = req;

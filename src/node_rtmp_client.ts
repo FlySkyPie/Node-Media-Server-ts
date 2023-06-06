@@ -107,6 +107,26 @@ const RtmpPacket = {
 };
 
 class NodeRtmpClient {
+	public url: any;
+	public info: any;
+	public isPublish: any;
+	public launcher: any;
+	public handshakePayload: any;
+	public handshakeState: any;
+	public handshakeBytes: any;
+	public parserBuffer: any;
+	public parserState: any;
+	public parserBytes: any;
+	public parserBasicBytes: any;
+	public parserPacket: any;
+	public inPackets: any;
+	public inChunkSize: any;
+	public outChunkSize: any;
+	public streamId: any;
+	public isSocketOpen: any;
+	public socket: any;
+	public ackSize: any;
+
   constructor(rtmpUrl) {
     this.url = rtmpUrl;
     this.info = this.rtmpUrlParser(rtmpUrl);
