@@ -80,7 +80,7 @@ class NodeRtmpServer {
       this.tlsServer.close();
     }
 
-    context.sessions.forEach((session, id) => {
+    context.publisherSessions.forEach((session, id) => {
       if (session instanceof NodeRtmpSession)
         session.stop();
     });

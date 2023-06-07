@@ -5,13 +5,22 @@
 //
 import EventEmitter from 'events';
 
-let sessions = new Map();
-let publishers = new Map();
-let idlePlayers = new Set();
-let nodeEvent = new EventEmitter();
-let stat = {
+import type { IPublisherSession } from './interfaces/publisher-session';
+
+export const publisherSessions = new Map<any, IPublisherSession>();
+
+export const anotherSessions = new Map<any, any>();
+
+export const publishers = new Map();
+
+export const idlePlayers = new Set();
+
+export const nodeEvent = new EventEmitter();
+
+export const stat = {
   inbytes: 0,
   outbytes: 0,
   accepted: 0
 };
-export default { sessions, publishers, idlePlayers, nodeEvent, stat };
+
+export default { publisherSessions, publishers, idlePlayers, nodeEvent, stat };

@@ -14,10 +14,20 @@ import NodeHttpServer from './node_http_server';
 import NodeTransServer from './node_trans_server';
 import NodeRelayServer from './node_relay_server';
 import NodeFissionServer from './node_fission_server';
-import context from './node_core_ctx';
+import { nodeEvent, publisherSessions } from './node_core_ctx';
+
+type IConfig = {
+  logType: any;
+  rtmp: any;
+  http: any;
+  trans: any;
+  cluster: any;
+  relay: any;
+  fission: any;
+};
 
 class NodeMediaServer {
-  public config: any;
+  public config: IConfig;
   public nrs: any;
   public nhs: any;
   public nts: any;
@@ -28,7 +38,7 @@ class NodeMediaServer {
     this.config = config;
   }
 
-  run() {
+  public run() {
     Logger.setLogType(this.config.logType);
     Logger.log(`Node Media Server v${Package.version}`);
     if (this.config.rtmp) {
@@ -101,11 +111,11 @@ class NodeMediaServer {
     });
   }
 
-  on(eventName: any, listener: any) {
-    context.nodeEvent.on(eventName, listener);
+  public on(eventName: any, listener: any) {
+    nodeEvent.on(eventName, listener);
   }
 
-  stop() {
+  public stop() {
     if (this.nrs) {
       this.nrs.stop();
     }
@@ -120,8 +130,8 @@ class NodeMediaServer {
     }
   }
 
-  getSession(id: any) {
-    return context.sessions.get(id);
+  public getSession(id: any) {
+    return publisherSessions.get(id);
   }
 }
 

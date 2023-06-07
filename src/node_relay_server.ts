@@ -72,7 +72,7 @@ class NodeRelayServer {
         session.id = i;
         session.streamPath = `/${conf.app}/${conf.name}`;
         session.on('end', (id) => {
-          context.sessions.delete(id);
+          context.publisherSessions.delete(id);
           this.staticSessions.delete(id);
         });
         this.staticSessions.set(i, session);
@@ -91,9 +91,9 @@ class NodeRelayServer {
     conf.ouPath = url;
     let session = new NodeRelaySession(conf);
     const id = session.id;
-    context.sessions.set(id, session);
+    context.publisherSessions.set(id, session);
     session.on('end', (id) => {
-      context.sessions.delete(id);
+      context.publisherSessions.delete(id);
       this.dynamicSessions.delete(id);
     });
     this.dynamicSessions.set(id, session);
@@ -116,9 +116,9 @@ class NodeRelayServer {
     conf.ouPath = `rtmp://127.0.0.1:${this.config.rtmp.port}/${app}/${name}`;
     let session = new NodeRelaySession(conf);
     const id = session.id;
-    context.sessions.set(id, session);
+    context.publisherSessions.set(id, session);
     session.on('end', (id) => {
-      context.sessions.delete(id);
+      context.publisherSessions.delete(id);
       this.dynamicSessions.delete(id);
     });
     this.dynamicSessions.set(id, session);
@@ -139,9 +139,9 @@ class NodeRelayServer {
     conf.ouPath = url;
     let session = new NodeRelaySession(conf);
     const id = session.id;
-    context.sessions.set(id, session);
+    context.publisherSessions.set(id, session);
     session.on('end', (id) => {
-      context.sessions.delete(id);
+      context.publisherSessions.delete(id);
       this.dynamicSessions.delete(id);
     });
     this.dynamicSessions.set(id, session);
@@ -183,7 +183,7 @@ class NodeRelayServer {
 
   onDonePlay(id: any, streamPath?: any, args?: any) {
     let session = this.dynamicSessions.get(id);
-    let publisher = context.sessions.get(context.publishers.get(streamPath));
+    let publisher = context.publisherSessions.get(context.publishers.get(streamPath));
     if (session && publisher.players.size == 0) {
       session.end();
     }

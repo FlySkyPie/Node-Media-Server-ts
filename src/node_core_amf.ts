@@ -884,7 +884,7 @@ function amf0Decode(buffer) {
  * @param o
  * @returns {*}
  */
-function amfXEncodeOne(rules, o) {
+function amfXEncodeOne(rules: any, o: any) {
   //    Logger.debug('amfXEncodeOne type',o,amfType(o),rules[amfType(o)]);
   let f = rules[amfType(o)];
   if (f) return f(o);

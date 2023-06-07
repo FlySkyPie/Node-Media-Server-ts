@@ -6,8 +6,9 @@
 
 import QueryString from 'querystring';
 
+import type { IPublisherSession } from './interfaces/publisher-session';
 import AV from './node_core_av';
-import {AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME} from './node_core_av';
+import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from './node_core_av';
 import AMF from './node_core_amf';
 import Handshake from './node_rtmp_handshake';
 import NodeCoreUtils from './node_core_utils';
@@ -114,73 +115,73 @@ const RtmpPacket = {
   }
 };
 
-class NodeRtmpSession {
-	public config: any;
-	public socket: any;
-	public res: any;
-	public id: any;
-	public ip: any;
-	public TAG: any;
-	public handshakePayload: any;
-	public handshakeState: any;
-	public handshakeBytes: any;
-	public parserBuffer: any;
-	public parserState: any;
-	public parserBytes: any;
-	public parserBasicBytes: any;
-	public parserPacket: any;
-	public inPackets: any;
-	public inChunkSize: any;
-	public outChunkSize: any;
-	public pingTime: any;
-	public pingTimeout: any;
-	public pingInterval: any;
-	public isLocal: any;
-	public isStarting: any;
-	public isPublishing: any;
-	public isPlaying: any;
-	public isIdling: any;
-	public isPause: any;
-	public isReceiveAudio: any;
-	public isReceiveVideo: any;
-	public metaData: any;
-	public aacSequenceHeader: any;
-	public avcSequenceHeader: any;
-	public audioCodec: any;
-	public audioCodecName: any;
-	public audioProfileName: any;
-	public audioSamplerate: any;
-	public audioChannels: any;
-	public videoCodec: any;
-	public videoCodecName: any;
-	public videoProfileName: any;
-	public videoWidth: any;
-	public videoHeight: any;
-	public videoFps: any;
-	public videoCount: any;
-	public videoLevel: any;
-	public bitrate: any;
-	public ackSize: any;
-	public inAckSize: any;
-	public inLastAck: any;
-	public appname: any;
-	public streams: any;
-	public playStreamId: any;
-	public playStreamPath: any;
-	public playArgs: any;
-	public publishStreamId: any;
-	public publishStreamPath: any;
-	public publishArgs: any;
-	public players: any;
-	public numPlayCache: any;
-	public bitrateCache: any;
-	public rtmpGopCacheQueue: any;
-	public flvGopCacheQueue: any;
-	public connectCmdObj: any;
-	public isFirstAudioReceived: any;
-	public startTimestamp: any;
-	public objectEncoding: any;
-	public connectTime: any;
+class NodeRtmpSession implements IPublisherSession {
+  public config: any;
+  public socket: any;
+  public res: any;
+  public id: any;
+  public ip: any;
+  public TAG: any;
+  public handshakePayload: any;
+  public handshakeState: any;
+  public handshakeBytes: any;
+  public parserBuffer: any;
+  public parserState: any;
+  public parserBytes: any;
+  public parserBasicBytes: any;
+  public parserPacket: any;
+  public inPackets: any;
+  public inChunkSize: any;
+  public outChunkSize: any;
+  public pingTime: any;
+  public pingTimeout: any;
+  public pingInterval: any;
+  public isLocal: any;
+  public isStarting: any;
+  public isPublishing: any;
+  public isPlaying: any;
+  public isIdling: any;
+  public isPause: any;
+  public isReceiveAudio: any;
+  public isReceiveVideo: any;
+  public metaData: any;
+  public aacSequenceHeader: any;
+  public avcSequenceHeader: any;
+  public audioCodec: any;
+  public audioCodecName: any;
+  public audioProfileName: any;
+  public audioSamplerate: any;
+  public audioChannels: any;
+  public videoCodec: any;
+  public videoCodecName: any;
+  public videoProfileName: any;
+  public videoWidth: any;
+  public videoHeight: any;
+  public videoFps: any;
+  public videoCount: any;
+  public videoLevel: any;
+  public bitrate: any;
+  public ackSize: any;
+  public inAckSize: any;
+  public inLastAck: any;
+  public appname: any;
+  public streams: any;
+  public playStreamId: any;
+  public playStreamPath: any;
+  public playArgs: any;
+  public publishStreamId: any;
+  public publishStreamPath: any;
+  public publishArgs: any;
+  public players: any;
+  public numPlayCache: any;
+  public bitrateCache: any;
+  public rtmpGopCacheQueue: any;
+  public flvGopCacheQueue: any;
+  public connectCmdObj: any;
+  public isFirstAudioReceived: any;
+  public startTimestamp: any;
+  public objectEncoding: any;
+  public connectTime: any;
 
   constructor(config, socket) {
     this.config = config;
@@ -254,7 +255,7 @@ class NodeRtmpSession {
     this.rtmpGopCacheQueue = config.rtmp.gop_cache ? new Set() : null;
     this.flvGopCacheQueue = config.rtmp.gop_cache ? new Set() : null;
 
-    context.sessions.set(this.id, this);
+    context.publisherSessions.set(this.id, this);
   }
 
   run() {
@@ -286,7 +287,7 @@ class NodeRtmpSession {
       Logger.log(`[rtmp disconnect] id=${this.id}`);
       context.nodeEvent.emit('doneConnect', this.id, this.connectCmdObj);
 
-      context.sessions.delete(this.id);
+      context.publisherSessions.delete(this.id);
       this.socket.destroy();
     }
   }
@@ -760,7 +761,7 @@ class NodeRtmpSession {
     }
 
     for (let playerId of this.players) {
-      let playerSession = context.sessions.get(playerId);
+      let playerSession = context.publisherSessions.get(playerId);
 
       if (playerSession.numPlayCache === 0) {
         playerSession.res.cork();
@@ -901,7 +902,7 @@ class NodeRtmpSession {
 
     // Logger.log(rtmpChunks);
     for (let playerId of this.players) {
-      let playerSession = context.sessions.get(playerId);
+      let playerSession = context.publisherSessions.get(playerId);
 
       if (playerSession.numPlayCache === 0) {
         playerSession.res.cork();
@@ -957,7 +958,7 @@ class NodeRtmpSession {
         let flvTag = NodeFlvSession.createFlvTag(packet);
 
         for (let playerId of this.players) {
-          let playerSession = context.sessions.get(playerId);
+          let playerSession = context.publisherSessions.get(playerId);
           if (playerSession instanceof NodeRtmpSession) {
             if (playerSession.isStarting && playerSession.isPlaying && !playerSession.isPause) {
               rtmpChunks.writeUInt32LE(playerSession.playStreamId, 8);
@@ -1209,7 +1210,7 @@ class NodeRtmpSession {
 
       this.sendStatusMessage(this.publishStreamId, 'status', 'NetStream.Publish.Start', `${this.publishStreamPath} is now published.`);
       for (let idlePlayerId of context.idlePlayers) {
-        let idlePlayer = context.sessions.get(idlePlayerId);
+        let idlePlayer = context.publisherSessions.get(idlePlayerId);
         if (idlePlayer && idlePlayer.playStreamPath === this.publishStreamPath) {
           idlePlayer.onStartPlay();
           context.idlePlayers.delete(idlePlayerId);
@@ -1259,7 +1260,7 @@ class NodeRtmpSession {
 
   onStartPlay() {
     let publisherId = context.publishers.get(this.playStreamPath);
-    let publisher = context.sessions.get(publisherId);
+    let publisher = context.publisherSessions.get(publisherId);
     let players = publisher.players;
     players.add(this.id);
 
@@ -1322,7 +1323,7 @@ class NodeRtmpSession {
       if (context.publishers.has(this.playStreamPath)) {
         //fix ckplayer
         let publisherId = context.publishers.get(this.playStreamPath);
-        let publisher = context.sessions.get(publisherId);
+        let publisher = context.publisherSessions.get(publisherId);
         if (publisher.audioCodec === 10 || publisher.audioCodec === 13) {
           let packet = RtmpPacket.create();
           packet.header.fmt = RTMP_CHUNK_TYPE_0;
@@ -1378,7 +1379,7 @@ class NodeRtmpSession {
       } else {
         let publisherId = context.publishers.get(this.playStreamPath);
         if (publisherId != null) {
-          context.sessions.get(publisherId).players.delete(this.id);
+          context.publisherSessions.get(publisherId).players.delete(this.id);
         }
         context.nodeEvent.emit('donePlay', this.id, this.playStreamPath, this.playArgs);
         this.isPlaying = false;
@@ -1400,7 +1401,7 @@ class NodeRtmpSession {
         }
 
         for (let playerId of this.players) {
-          let playerSession = context.sessions.get(playerId);
+          let playerSession = context.publisherSessions.get(playerId);
           if (playerSession instanceof NodeRtmpSession) {
             playerSession.sendStatusMessage(playerSession.playStreamId, 'status', 'NetStream.Play.UnpublishNotify', 'stream is now unpublished.');
             playerSession.flush();
@@ -1411,7 +1412,7 @@ class NodeRtmpSession {
 
         //let the players to idlePlayers
         for (let playerId of this.players) {
-          let playerSession = context.sessions.get(playerId);
+          let playerSession = context.publisherSessions.get(playerId);
           context.idlePlayers.add(playerId);
           playerSession.isPlaying = false;
           playerSession.isIdling = true;

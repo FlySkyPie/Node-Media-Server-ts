@@ -161,7 +161,7 @@ class NodeHttpServer {
     });
 
     context.nodeEvent.on('doneConnect', (id, args) => {
-      let session = context.sessions.get(id);
+      let session = context.publisherSessions.get(id);
       let socket = session instanceof NodeFlvSession ? session.req.socket : session.socket;
       context.stat.inbytes += socket.bytesRead;
       context.stat.outbytes += socket.bytesWritten;
@@ -173,10 +173,10 @@ class NodeHttpServer {
     if (this.httpsServer) {
       this.httpsServer.close();
     }
-    context.sessions.forEach((session, id) => {
+    context.publisherSessions.forEach((session, id) => {
       if (session instanceof NodeFlvSession) {
         session.req.destroy();
-        context.sessions.delete(id);
+        context.publisherSessions.delete(id);
       }
     });
   }

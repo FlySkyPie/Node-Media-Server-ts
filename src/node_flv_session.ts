@@ -6,39 +6,44 @@
 import URL from 'url';
 
 import Logger from './node_core_logger';
-import context from './node_core_ctx';
+import context, { anotherSessions } from './node_core_ctx';
 import NodeCoreUtils from './node_core_utils';
 
-const FlvPacket = {
-  create: (payload = null, type = 0, time = 0) => {
-    return {
-      header: {
-        length: payload ? payload.length : 0,
-        timestamp: time,
-        type: type
-      },
-      payload: payload
-    };
-  }
+type IPacket = {
+  header: {
+    length: number;
+    timestamp: number;
+    type: number;
+  },
+  payload: Buffer | null;
 };
 
-class NodeFlvSession {
-	public config: any;
-	public req: any;
-	public res: any;
-	public id: any;
-	public ip: any;
-	public playStreamPath: any;
-	public playArgs: any;
-	public isStarting: any;
-	public isPlaying: any;
-	public isIdling: any;
-	public TAG: any;
-	public numPlayCache: any;
-	public connectCmdObj: any;
-	public connectTime: any;
+const createPacket = (payload: Buffer | null = null, type = 0, time = 0): IPacket => ({
+  header: {
+    length: payload ? payload.length : 0,
+    timestamp: time,
+    type: type
+  },
+  payload: payload
+});
 
-  constructor(config, req, res) {
+class NodeFlvSession {
+  public config: any;
+  public req: any;
+  public res: any;
+  public id: any;
+  public ip: any;
+  public playStreamPath: any;
+  public playArgs: any;
+  public isStarting: boolean;
+  public isPlaying: boolean;
+  public isIdling: boolean;
+  public TAG: any;
+  public numPlayCache: any;
+  public connectCmdObj: any;
+  public connectTime: any;
+
+  constructor(config: any, req: any, res: any) {
     this.config = config;
     this.req = req;
     this.res = res;
@@ -69,13 +74,13 @@ class NodeFlvSession {
     }
 
     this.numPlayCache = 0;
-    context.sessions.set(this.id, this);
+    anotherSessions.set(this.id, this);
   }
 
   run() {
     let method = this.req.method;
     let urlInfo = URL.parse(this.req.url, true);
-    let streamPath = urlInfo.pathname.split('.')[0];
+    let streamPath = urlInfo.pathname!.split('.')[0];
     this.connectCmdObj = { ip: this.ip, method, streamPath, query: urlInfo.query };
     this.connectTime = new Date();
     this.isStarting = true;
@@ -101,8 +106,8 @@ class NodeFlvSession {
     if (this.isStarting) {
       this.isStarting = false;
       let publisherId = context.publishers.get(this.playStreamPath);
-      if (publisherId != null) {
-        context.sessions.get(publisherId).players.delete(this.id);
+      if (publisherId !== null) {
+        context.publisherSessions.get(publisherId)!.players.delete(this.id);
         context.nodeEvent.emit('donePlay', this.id, this.playStreamPath, this.playArgs);
       }
       Logger.log(`[${this.TAG} play] Close stream. id=${this.id} streamPath=${this.playStreamPath}`);
@@ -110,7 +115,7 @@ class NodeFlvSession {
       context.nodeEvent.emit('doneConnect', this.id, this.connectCmdObj);
       this.res.end();
       context.idlePlayers.delete(this.id);
-      context.sessions.delete(this.id);
+      context.publisherSessions.delete(this.id);
     }
   }
 
@@ -118,7 +123,7 @@ class NodeFlvSession {
     this.stop();
   }
 
-  onReqError(e) {
+  onReqError(e: any) {
     this.stop();
   }
 
@@ -154,7 +159,12 @@ class NodeFlvSession {
 
   onStartPlay() {
     let publisherId = context.publishers.get(this.playStreamPath);
-    let publisher = context.sessions.get(publisherId);
+    let publisher = context.publisherSessions.get(publisherId);
+
+    if (!publisher) {
+      throw new Error("publisher is undefined!");
+    }
+
     let players = publisher.players;
     players.add(this.id);
 
@@ -171,21 +181,21 @@ class NodeFlvSession {
 
     //send Metadata
     if (publisher.metaData != null) {
-      let packet = FlvPacket.create(publisher.metaData, 18);
+      let packet = createPacket(publisher.metaData, 18);
       let tag = NodeFlvSession.createFlvTag(packet);
       this.res.write(tag);
     }
 
     //send aacSequenceHeader
     if (publisher.audioCodec == 10) {
-      let packet = FlvPacket.create(publisher.aacSequenceHeader, 8);
+      let packet = createPacket(publisher.aacSequenceHeader, 8);
       let tag = NodeFlvSession.createFlvTag(packet);
       this.res.write(tag);
     }
 
     //send avcSequenceHeader
     if (publisher.videoCodec == 7 || publisher.videoCodec == 12) {
-      let packet = FlvPacket.create(publisher.avcSequenceHeader, 9);
+      let packet = createPacket(publisher.avcSequenceHeader, 9);
       let tag = NodeFlvSession.createFlvTag(packet);
       this.res.write(tag);
     }
@@ -203,7 +213,7 @@ class NodeFlvSession {
     context.nodeEvent.emit('postPlay', this.id, this.playStreamPath, this.playArgs);
   }
 
-  static createFlvTag(packet) {
+  static createFlvTag(packet: IPacket) {
     let PreviousTagSize = 11 + packet.header.length;
     let tagBuffer = Buffer.alloc(PreviousTagSize + 4);
     tagBuffer[0] = packet.header.type;
@@ -214,6 +224,11 @@ class NodeFlvSession {
     tagBuffer[7] = (packet.header.timestamp >> 24) & 0xff;
     tagBuffer.writeUIntBE(0, 8, 3);
     tagBuffer.writeUInt32BE(PreviousTagSize, PreviousTagSize);
+
+    if (!packet.payload) {
+      throw new Error('packet.payload is null');
+    }
+
     packet.payload.copy(tagBuffer, 11, 0, packet.header.length);
     return tagBuffer;
   }
