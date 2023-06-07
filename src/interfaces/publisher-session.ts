@@ -18,4 +18,14 @@ export interface IPublisherSession {
     avcSequenceHeader: Buffer;
 
     flvGopCacheQueue: any;
+
+    rtmpGopCacheQueue: any;
+
+    parserPacket: any;
+
+    sendStatusMessage: (...arg: any) => void;
+
+    playStreamId: any;
+
+    flush: () => void;
 }

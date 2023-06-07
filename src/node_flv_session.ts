@@ -6,7 +6,7 @@
 import URL from 'url';
 
 import Logger from './node_core_logger';
-import context, { anotherSessions } from './node_core_ctx';
+import context, { playerSessions } from './node_core_ctx';
 import NodeCoreUtils from './node_core_utils';
 
 type IPacket = {
@@ -74,7 +74,7 @@ class NodeFlvSession {
     }
 
     this.numPlayCache = 0;
-    anotherSessions.set(this.id, this);
+    playerSessions.set(this.id, this);
   }
 
   run() {

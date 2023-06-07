@@ -9,7 +9,7 @@ import type { IPublisherSession } from './interfaces/publisher-session';
 
 export const publisherSessions = new Map<any, IPublisherSession>();
 
-export const anotherSessions = new Map<any, any>();
+export const playerSessions = new Map<any, any>();
 
 export const publishers = new Map();
 

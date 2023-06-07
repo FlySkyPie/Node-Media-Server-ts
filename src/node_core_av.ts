@@ -17,7 +17,7 @@ const AAC_CHANNELS = [
   0, 1, 2, 3, 4, 5, 6, 8
 ];
 
-const AUDIO_CODEC_NAME = [
+export const AUDIO_CODEC_NAME = [
   '',
   'ADPCM',
   'MP3',
@@ -37,11 +37,11 @@ const AUDIO_CODEC_NAME = [
   'Uncompressed'
 ];
 
-const AUDIO_SOUND_RATE = [
+export const AUDIO_SOUND_RATE = [
   5512, 11025, 22050, 44100
 ];
 
-const VIDEO_CODEC_NAME = [
+export const VIDEO_CODEC_NAME = [
   '',
   'Jpeg',
   'Sorenson-H263',

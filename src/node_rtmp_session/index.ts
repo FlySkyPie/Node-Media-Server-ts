@@ -6,15 +6,17 @@
 
 import QueryString from 'querystring';
 
-import type { IPublisherSession } from './interfaces/publisher-session';
-import AV from './node_core_av';
-import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from './node_core_av';
-import AMF from './node_core_amf';
-import Handshake from './node_rtmp_handshake';
-import NodeCoreUtils from './node_core_utils';
-import NodeFlvSession from './node_flv_session';
-import context from './node_core_ctx';
-import Logger from './node_core_logger';
+import type { IPublisherSession } from '../interfaces/publisher-session';
+import AV from '../node_core_av';
+import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from '../node_core_av';
+import AMF from '../node_core_amf';
+import Handshake from '../node_rtmp_handshake';
+import NodeCoreUtils from '../node_core_utils';
+import NodeFlvSession from '../node_flv_session';
+import context, { playerSessions } from '../node_core_ctx';
+import Logger from '../node_core_logger';
+import { createRtmpPacket } from './utils';
+import { IRtmpPacket } from './types';
 
 const N_CHUNK_STREAM = 8;
 const RTMP_VERSION = 3;
@@ -182,8 +184,10 @@ class NodeRtmpSession implements IPublisherSession {
   public startTimestamp: any;
   public objectEncoding: any;
   public connectTime: any;
+  public isFirstVideoReceived: boolean = false;
 
-  constructor(config, socket) {
+
+  constructor(config: any, socket: any) {
     this.config = config;
     this.socket = socket;
     this.res = socket;
@@ -258,6 +262,7 @@ class NodeRtmpSession implements IPublisherSession {
     context.publisherSessions.set(this.id, this);
   }
 
+
   run() {
     this.socket.on('data', this.onSocketData.bind(this));
     this.socket.on('close', this.onSocketClose.bind(this));
@@ -308,7 +313,7 @@ class NodeRtmpSession implements IPublisherSession {
     this.stop();
   }
 
-  onSocketError(e) {
+  onSocketError(e: any) {
     // Logger.log('onSocketError', e);
     this.stop();
   }
@@ -323,7 +328,7 @@ class NodeRtmpSession implements IPublisherSession {
    * @param {Buffer} data 
    * @returns 
    */
-  onSocketData(data) {
+  onSocketData(data: Buffer) {
     let bytes = data.length;
     let p = 0;
     let n = 0;
@@ -373,7 +378,7 @@ class NodeRtmpSession implements IPublisherSession {
     }
   }
 
-  rtmpChunkBasicHeaderCreate(fmt, cid) {
+  rtmpChunkBasicHeaderCreate(fmt: number, cid: number) {
     let out;
     if (cid >= 64 + 255) {
       out = Buffer.alloc(3);
@@ -391,7 +396,7 @@ class NodeRtmpSession implements IPublisherSession {
     return out;
   }
 
-  rtmpChunkMessageHeaderCreate(header) {
+  rtmpChunkMessageHeaderCreate(header: any) {
     let out = Buffer.alloc(rtmpHeaderSize[header.fmt % 4]);
     if (header.fmt <= RTMP_CHUNK_TYPE_2) {
       out.writeUIntBE(header.timestamp >= 0xffffff ? 0xffffff : header.timestamp, 0, 3);
@@ -413,7 +418,7 @@ class NodeRtmpSession implements IPublisherSession {
    * @param {RtmpPacket} packet 
    * @returns 
    */
-  rtmpChunksCreate(packet) {
+  rtmpChunksCreate(packet: IRtmpPacket) {
     let header = packet.header;
     let payload = packet.payload;
     let payloadSize = header.length;
@@ -426,6 +431,10 @@ class NodeRtmpSession implements IPublisherSession {
     let useExtendedTimestamp = header.timestamp >= 0xffffff;
     let headerSize = chunkBasicHeader.length + chunkMessageHeader.length + (useExtendedTimestamp ? 4 : 0);
     let n = headerSize + payloadSize + Math.floor(payloadSize / chunkSize);
+
+    if (!payload) {
+      throw new Error("payload is null");
+    }
 
     if (useExtendedTimestamp) {
       n += Math.floor(payloadSize / chunkSize) * 4;
@@ -475,7 +484,7 @@ class NodeRtmpSession implements IPublisherSession {
    * @param {Number} p 
    * @param {Number} bytes 
    */
-  rtmpChunkRead(data, p, bytes) {
+  rtmpChunkRead(data: Buffer, p: number, bytes: number) {
     // Logger.log('rtmpChunkRead', p, bytes);
     let size = 0;
     let offset = 0;
@@ -592,7 +601,7 @@ class NodeRtmpSession implements IPublisherSession {
     }
     let hasp = this.inPackets.has(cid);
     if (!hasp) {
-      this.parserPacket = RtmpPacket.create(fmt, cid);
+      this.parserPacket = createRtmpPacket(fmt, cid);
       this.inPackets.set(cid, this.parserPacket);
     } else {
       this.parserPacket = this.inPackets.get(cid);
@@ -644,9 +653,11 @@ class NodeRtmpSession implements IPublisherSession {
       case RTMP_TYPE_ACKNOWLEDGEMENT:
       case RTMP_TYPE_WINDOW_ACKNOWLEDGEMENT_SIZE:
       case RTMP_TYPE_SET_PEER_BANDWIDTH:
-        return 0 === this.rtmpControlHandler() ? -1 : 0;
+        return 0;
+      // return 0 === this.rtmpControlHandler() ? -1 : 0;
       case RTMP_TYPE_EVENT:
-        return 0 === this.rtmpEventHandler() ? -1 : 0;
+        return 0;
+      // return 0 === this.rtmpEventHandler() ? -1 : 0;
       case RTMP_TYPE_AUDIO:
         return this.rtmpAudioHandler();
       case RTMP_TYPE_VIDEO:
@@ -724,7 +735,7 @@ class NodeRtmpSession implements IPublisherSession {
       this.aacSequenceHeader = Buffer.alloc(payload.length);
       payload.copy(this.aacSequenceHeader);
       if (sound_format == 10) {
-        let info = AV.readAACSpecificConfig(this.aacSequenceHeader);
+        let info: any = AV.readAACSpecificConfig(this.aacSequenceHeader);
         this.audioProfileName = AV.getAACProfileName(info);
         this.audioSamplerate = info.sample_rate;
         this.audioChannels = info.channels;
@@ -740,11 +751,16 @@ class NodeRtmpSession implements IPublisherSession {
       );
     }
 
-    let packet = RtmpPacket.create();
+    let packet = createRtmpPacket();
     packet.header.fmt = RTMP_CHUNK_TYPE_0;
     packet.header.cid = RTMP_CHANNEL_AUDIO;
     packet.header.type = RTMP_TYPE_AUDIO;
     packet.payload = payload;
+
+    if (!packet.payload) {
+      throw new Error("packet.payload is null");
+    }
+
     packet.header.length = packet.payload.length;
     packet.header.timestamp = this.parserPacket.clock;
     let rtmpChunks = this.rtmpChunksCreate(packet);
@@ -761,7 +777,11 @@ class NodeRtmpSession implements IPublisherSession {
     }
 
     for (let playerId of this.players) {
-      let playerSession = context.publisherSessions.get(playerId);
+      let playerSession = playerSessions.get(playerId);
+
+      if (!playerSession) {
+        throw new Error("playerSession is null");
+      }
 
       if (playerSession.numPlayCache === 0) {
         playerSession.res.cork();
@@ -773,7 +793,7 @@ class NodeRtmpSession implements IPublisherSession {
           playerSession.res.write(rtmpChunks);
         }
       } else if (playerSession instanceof NodeFlvSession) {
-        playerSession.res.write(flvTag, null, e => {
+        playerSession.res.write(flvTag, null, (e: any) => {
           //websocket will throw a error if not set the cb when closed
         });
       }
@@ -858,7 +878,7 @@ class NodeRtmpSession implements IPublisherSession {
       if (frame_type == 1 && payload[1] == 0) {
         this.avcSequenceHeader = Buffer.alloc(payload.length);
         payload.copy(this.avcSequenceHeader);
-        let info = AV.readAVCSpecificConfig(this.avcSequenceHeader);
+        let info: any = AV.readAVCSpecificConfig(this.avcSequenceHeader);
         this.videoWidth = info.width;
         this.videoHeight = info.height;
         this.videoProfileName = AV.getAVCProfileName(info);
@@ -876,11 +896,16 @@ class NodeRtmpSession implements IPublisherSession {
       );
     }
 
-    let packet = RtmpPacket.create();
+    let packet = createRtmpPacket();
     packet.header.fmt = RTMP_CHUNK_TYPE_0;
     packet.header.cid = RTMP_CHANNEL_VIDEO;
     packet.header.type = RTMP_TYPE_VIDEO;
     packet.payload = payload;
+
+    if (!packet.payload) {
+      throw new Error("packet.payload is null");
+    }
+
     packet.header.length = packet.payload.length;
     packet.header.timestamp = this.parserPacket.clock;
     let rtmpChunks = this.rtmpChunksCreate(packet);
@@ -902,7 +927,7 @@ class NodeRtmpSession implements IPublisherSession {
 
     // Logger.log(rtmpChunks);
     for (let playerId of this.players) {
-      let playerSession = context.publisherSessions.get(playerId);
+      let playerSession = playerSessions.get(playerId);
 
       if (playerSession.numPlayCache === 0) {
         playerSession.res.cork();
@@ -914,7 +939,7 @@ class NodeRtmpSession implements IPublisherSession {
           playerSession.res.write(rtmpChunks);
         }
       } else if (playerSession instanceof NodeFlvSession) {
-        playerSession.res.write(flvTag, null, e => {
+        playerSession.res.write(flvTag, null, (e: any) => {
           //websocket will throw a error if not set the cb when closed
         });
       }
@@ -931,7 +956,7 @@ class NodeRtmpSession implements IPublisherSession {
   rtmpDataHandler() {
     let offset = this.parserPacket.header.type === RTMP_TYPE_FLEX_STREAM ? 1 : 0;
     let payload = this.parserPacket.payload.slice(offset, this.parserPacket.header.length);
-    let dataMessage = AMF.decodeAmf0Data(payload);
+    let dataMessage: any = AMF.decodeAmf0Data(payload);
     switch (dataMessage.cmd) {
       case '@setDataFrame':
         if (dataMessage.dataObj) {
@@ -948,11 +973,16 @@ class NodeRtmpSession implements IPublisherSession {
         };
         this.metaData = AMF.encodeAmf0Data(opt);
 
-        let packet = RtmpPacket.create();
+        let packet = createRtmpPacket();
         packet.header.fmt = RTMP_CHUNK_TYPE_0;
         packet.header.cid = RTMP_CHANNEL_DATA;
         packet.header.type = RTMP_TYPE_DATA;
         packet.payload = this.metaData;
+
+        if (!packet.payload) {
+          throw new Error("packet.payload is null");
+        }
+
         packet.header.length = packet.payload.length;
         let rtmpChunks = this.rtmpChunksCreate(packet);
         let flvTag = NodeFlvSession.createFlvTag(packet);
@@ -965,7 +995,7 @@ class NodeRtmpSession implements IPublisherSession {
               playerSession.socket.write(rtmpChunks);
             }
           } else if (playerSession instanceof NodeFlvSession) {
-            playerSession.res.write(flvTag, null, e => {
+            playerSession.res.write(flvTag, null, (e: any) => {
               //websocket will throw a error if not set the cb when closed
             });
           }
@@ -977,7 +1007,7 @@ class NodeRtmpSession implements IPublisherSession {
   rtmpInvokeHandler() {
     let offset = this.parserPacket.header.type === RTMP_TYPE_FLEX_MESSAGE ? 1 : 0;
     let payload = this.parserPacket.payload.slice(offset, this.parserPacket.header.length);
-    let invokeMessage = AMF.decodeAmf0Cmd(payload);
+    let invokeMessage: any = AMF.decodeAmf0Cmd(payload);
     // Logger.log(invokeMessage);
     switch (invokeMessage.cmd) {
       case 'connect':
@@ -1016,63 +1046,73 @@ class NodeRtmpSession implements IPublisherSession {
     }
   }
 
-  sendACK(size) {
+  sendACK(size: number) {
     let rtmpBuffer = Buffer.from('02000000000004030000000000000000', 'hex');
     rtmpBuffer.writeUInt32BE(size, 12);
     this.socket.write(rtmpBuffer);
   }
 
-  sendWindowACK(size) {
+  sendWindowACK(size: number) {
     let rtmpBuffer = Buffer.from('02000000000004050000000000000000', 'hex');
     rtmpBuffer.writeUInt32BE(size, 12);
     this.socket.write(rtmpBuffer);
   }
 
-  setPeerBandwidth(size, type) {
+  setPeerBandwidth(size: number, type: number) {
     let rtmpBuffer = Buffer.from('0200000000000506000000000000000000', 'hex');
     rtmpBuffer.writeUInt32BE(size, 12);
     rtmpBuffer[16] = type;
     this.socket.write(rtmpBuffer);
   }
 
-  setChunkSize(size) {
+  setChunkSize(size: number) {
     let rtmpBuffer = Buffer.from('02000000000004010000000000000000', 'hex');
     rtmpBuffer.writeUInt32BE(size, 12);
     this.socket.write(rtmpBuffer);
   }
 
-  sendStreamStatus(st, id) {
+  sendStreamStatus(st: number, id: number) {
     let rtmpBuffer = Buffer.from('020000000000060400000000000000000000', 'hex');
     rtmpBuffer.writeUInt16BE(st, 12);
     rtmpBuffer.writeUInt32BE(id, 14);
     this.socket.write(rtmpBuffer);
   }
 
-  sendInvokeMessage(sid, opt) {
-    let packet = RtmpPacket.create();
+  sendInvokeMessage(sid: number, opt: any) {
+    let packet = createRtmpPacket();
     packet.header.fmt = RTMP_CHUNK_TYPE_0;
     packet.header.cid = RTMP_CHANNEL_INVOKE;
     packet.header.type = RTMP_TYPE_INVOKE;
     packet.header.stream_id = sid;
     packet.payload = AMF.encodeAmf0Cmd(opt);
+
+    if (!packet.payload) {
+      throw new Error("packet.payload is null");
+    }
+
     packet.header.length = packet.payload.length;
     let chunks = this.rtmpChunksCreate(packet);
     this.socket.write(chunks);
   }
 
-  sendDataMessage(opt, sid) {
-    let packet = RtmpPacket.create();
+  sendDataMessage(opt: any, sid: any) {
+    let packet = createRtmpPacket();
     packet.header.fmt = RTMP_CHUNK_TYPE_0;
     packet.header.cid = RTMP_CHANNEL_DATA;
     packet.header.type = RTMP_TYPE_DATA;
     packet.payload = AMF.encodeAmf0Data(opt);
+
+    if (!packet.payload) {
+      throw new Error("packet.payload is null");
+    }
+
     packet.header.length = packet.payload.length;
     packet.header.stream_id = sid;
     let chunks = this.rtmpChunksCreate(packet);
     this.socket.write(chunks);
   }
 
-  sendStatusMessage(sid, level, code, description?) {
+  sendStatusMessage(sid: any, level: any, code: any, description?: any) {
     let opt = {
       cmd: 'onStatus',
       transId: 0,
@@ -1086,7 +1126,7 @@ class NodeRtmpSession implements IPublisherSession {
     this.sendInvokeMessage(sid, opt);
   }
 
-  sendRtmpSampleAccess(sid?) {
+  sendRtmpSampleAccess(sid?: any) {
     let opt = {
       cmd: '|RtmpSampleAccess',
       bool1: false,
@@ -1097,7 +1137,7 @@ class NodeRtmpSession implements IPublisherSession {
 
   sendPingRequest() {
     let currentTimestamp = Date.now() - this.startTimestamp;
-    let packet = RtmpPacket.create();
+    let packet = createRtmpPacket();
     packet.header.fmt = RTMP_CHUNK_TYPE_0;
     packet.header.cid = RTMP_CHANNEL_PROTOCOL;
     packet.header.type = RTMP_TYPE_EVENT;
@@ -1108,7 +1148,7 @@ class NodeRtmpSession implements IPublisherSession {
     this.socket.write(chunks);
   }
 
-  respondConnect(tid) {
+  respondConnect(tid: any) {
     let opt = {
       cmd: '_result',
       transId: tid,
@@ -1126,7 +1166,7 @@ class NodeRtmpSession implements IPublisherSession {
     this.sendInvokeMessage(0, opt);
   }
 
-  respondCreateStream(tid) {
+  respondCreateStream(tid: any) {
     this.streams++;
     let opt = {
       cmd: '_result',
@@ -1144,7 +1184,7 @@ class NodeRtmpSession implements IPublisherSession {
     this.sendRtmpSampleAccess();
   }
 
-  onConnect(invokeMessage) {
+  onConnect(invokeMessage: any) {
     invokeMessage.cmdObj.app = invokeMessage.cmdObj.app.replace('/', ''); //fix jwplayer
     context.nodeEvent.emit('preConnect', this.id, invokeMessage.cmdObj);
     if (!this.isStarting) {
@@ -1171,11 +1211,11 @@ class NodeRtmpSession implements IPublisherSession {
     context.nodeEvent.emit('postConnect', this.id, invokeMessage.cmdObj);
   }
 
-  onCreateStream(invokeMessage) {
+  onCreateStream(invokeMessage: any) {
     this.respondCreateStream(invokeMessage.transId);
   }
 
-  onPublish(invokeMessage) {
+  onPublish(invokeMessage: any) {
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
@@ -1210,7 +1250,7 @@ class NodeRtmpSession implements IPublisherSession {
 
       this.sendStatusMessage(this.publishStreamId, 'status', 'NetStream.Publish.Start', `${this.publishStreamPath} is now published.`);
       for (let idlePlayerId of context.idlePlayers) {
-        let idlePlayer = context.publisherSessions.get(idlePlayerId);
+        let idlePlayer = playerSessions.get(idlePlayerId);
         if (idlePlayer && idlePlayer.playStreamPath === this.publishStreamPath) {
           idlePlayer.onStartPlay();
           context.idlePlayers.delete(idlePlayerId);
@@ -1220,7 +1260,7 @@ class NodeRtmpSession implements IPublisherSession {
     }
   }
 
-  onPlay(invokeMessage) {
+  onPlay(invokeMessage: any) {
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
@@ -1261,11 +1301,16 @@ class NodeRtmpSession implements IPublisherSession {
   onStartPlay() {
     let publisherId = context.publishers.get(this.playStreamPath);
     let publisher = context.publisherSessions.get(publisherId);
+
+    if (!publisher) {
+      throw new Error("publisher is undeifined");
+    }
+
     let players = publisher.players;
     players.add(this.id);
 
     if (publisher.metaData != null) {
-      let packet = RtmpPacket.create();
+      let packet = createRtmpPacket();
       packet.header.fmt = RTMP_CHUNK_TYPE_0;
       packet.header.cid = RTMP_CHANNEL_DATA;
       packet.header.type = RTMP_TYPE_DATA;
@@ -1277,7 +1322,7 @@ class NodeRtmpSession implements IPublisherSession {
     }
 
     if (publisher.audioCodec === 10 || publisher.audioCodec === 13) {
-      let packet = RtmpPacket.create();
+      let packet = createRtmpPacket();
       packet.header.fmt = RTMP_CHUNK_TYPE_0;
       packet.header.cid = RTMP_CHANNEL_AUDIO;
       packet.header.type = RTMP_TYPE_AUDIO;
@@ -1289,7 +1334,7 @@ class NodeRtmpSession implements IPublisherSession {
     }
 
     if (publisher.videoCodec === 7 || publisher.videoCodec === 12 || publisher.videoCodec === 13) {
-      let packet = RtmpPacket.create();
+      let packet = createRtmpPacket();
       packet.header.fmt = RTMP_CHUNK_TYPE_0;
       packet.header.cid = RTMP_CHANNEL_VIDEO;
       packet.header.type = RTMP_TYPE_VIDEO;
@@ -1313,7 +1358,7 @@ class NodeRtmpSession implements IPublisherSession {
     Logger.log(`[rtmp play] Join stream. id=${this.id} streamPath=${this.playStreamPath}  streamId=${this.playStreamId} `);
   }
 
-  onPause(invokeMessage) {
+  onPause(invokeMessage: any) {
     this.isPause = invokeMessage.pause;
     let c = this.isPause ? 'NetStream.Pause.Notify' : 'NetStream.Unpause.Notify';
     let d = this.isPause ? 'Paused live' : 'Unpaused live';
@@ -1324,8 +1369,14 @@ class NodeRtmpSession implements IPublisherSession {
         //fix ckplayer
         let publisherId = context.publishers.get(this.playStreamPath);
         let publisher = context.publisherSessions.get(publisherId);
+
+        if (!publisher) {
+          throw new Error("publisher is undeifined");
+        }
+
+
         if (publisher.audioCodec === 10 || publisher.audioCodec === 13) {
-          let packet = RtmpPacket.create();
+          let packet = createRtmpPacket();
           packet.header.fmt = RTMP_CHUNK_TYPE_0;
           packet.header.cid = RTMP_CHANNEL_AUDIO;
           packet.header.type = RTMP_TYPE_AUDIO;
@@ -1337,7 +1388,7 @@ class NodeRtmpSession implements IPublisherSession {
           this.socket.write(chunks);
         }
         if (publisher.videoCodec === 7 || publisher.videoCodec === 12 || publisher.videoCodec === 13) {
-          let packet = RtmpPacket.create();
+          let packet = createRtmpPacket();
           packet.header.fmt = RTMP_CHUNK_TYPE_0;
           packet.header.cid = RTMP_CHANNEL_VIDEO;
           packet.header.type = RTMP_TYPE_VIDEO;
@@ -1355,12 +1406,12 @@ class NodeRtmpSession implements IPublisherSession {
     this.sendStatusMessage(this.playStreamId, c, d);
   }
 
-  onReceiveAudio(invokeMessage) {
+  onReceiveAudio(invokeMessage: any) {
     this.isReceiveAudio = invokeMessage.bool;
     Logger.log(`[rtmp play] receiveAudio=${this.isReceiveAudio} id=${this.id} `);
   }
 
-  onReceiveVideo(invokeMessage) {
+  onReceiveVideo(invokeMessage: any) {
     this.isReceiveVideo = invokeMessage.bool;
     Logger.log(`[rtmp play] receiveVideo=${this.isReceiveVideo} id=${this.id} `);
   }
@@ -1371,7 +1422,7 @@ class NodeRtmpSession implements IPublisherSession {
     this.onDeleteStream(closeStream);
   }
 
-  onDeleteStream(invokeMessage) {
+  onDeleteStream(invokeMessage: any) {
     if (invokeMessage.streamId == this.playStreamId) {
       if (this.isIdling) {
         context.idlePlayers.delete(this.id);
@@ -1379,7 +1430,7 @@ class NodeRtmpSession implements IPublisherSession {
       } else {
         let publisherId = context.publishers.get(this.playStreamPath);
         if (publisherId != null) {
-          context.publisherSessions.get(publisherId).players.delete(this.id);
+          context.publisherSessions.get(publisherId)!.players.delete(this.id);
         }
         context.nodeEvent.emit('donePlay', this.id, this.playStreamPath, this.playArgs);
         this.isPlaying = false;
@@ -1401,18 +1452,20 @@ class NodeRtmpSession implements IPublisherSession {
         }
 
         for (let playerId of this.players) {
-          let playerSession = context.publisherSessions.get(playerId);
-          if (playerSession instanceof NodeRtmpSession) {
-            playerSession.sendStatusMessage(playerSession.playStreamId, 'status', 'NetStream.Play.UnpublishNotify', 'stream is now unpublished.');
-            playerSession.flush();
-          } else {
-            playerSession.stop();
+          let publisherSession = context.publisherSessions.get(playerId);
+
+          if (publisherSession) {
+            publisherSession.sendStatusMessage(publisherSession.playStreamId, 'status', 'NetStream.Play.UnpublishNotify', 'stream is now unpublished.');
+            publisherSession.flush();
           }
+
+          let playerSession = playerSessions.get(playerId);
+          playerSession.stop();
         }
 
         //let the players to idlePlayers
         for (let playerId of this.players) {
-          let playerSession = context.publisherSessions.get(playerId);
+          let playerSession = playerSessions.get(playerId);
           context.idlePlayers.add(playerId);
           playerSession.isPlaying = false;
           playerSession.isIdling = true;
