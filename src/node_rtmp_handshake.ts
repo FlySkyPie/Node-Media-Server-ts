@@ -25,25 +25,25 @@ const GenuineFMSConstCrud = Buffer.concat([Buffer.from(GenuineFMSConst, 'utf8'),
 const GenuineFPConst = 'Genuine Adobe Flash Player 001';
 const GenuineFPConstCrud = Buffer.concat([Buffer.from(GenuineFPConst, 'utf8'), RandomCrud]);
 
-function calcHmac(data, key) {
+function calcHmac(data: any, key: any) {
   let hmac = Crypto.createHmac('sha256', key);
   hmac.update(data);
   return hmac.digest();
 }
 
-function GetClientGenuineConstDigestOffset(buf) {
+function GetClientGenuineConstDigestOffset(buf: any) {
   let offset = buf[0] + buf[1] + buf[2] + buf[3];
   offset = (offset % 728) + 12;
   return offset;
 }
 
-function GetServerGenuineConstDigestOffset(buf) {
+function GetServerGenuineConstDigestOffset(buf: any) {
   let offset = buf[0] + buf[1] + buf[2] + buf[3];
   offset = (offset % 728) + 776;
   return offset;
 }
 
-function detectClientMessageFormat(clientsig) {
+function detectClientMessageFormat(clientsig: any) {
   let computedSignature, msg, providedSignature, sdl;
   sdl = GetServerGenuineConstDigestOffset(clientsig.slice(772, 776));
   msg = Buffer.concat([clientsig.slice(0, sdl), clientsig.slice(sdl + SHA256DL)], 1504);
@@ -62,7 +62,7 @@ function detectClientMessageFormat(clientsig) {
   return MESSAGE_FORMAT_0;
 }
 
-function generateS1(messageFormat) {
+function generateS1(messageFormat: any) {
   let randomBytes = Crypto.randomBytes(RTMP_SIG_SIZE - 8);
   let handshakeBytes = Buffer.concat([Buffer.from([0, 0, 0, 0, 1, 2, 3, 4]), randomBytes], RTMP_SIG_SIZE);
 
@@ -79,7 +79,7 @@ function generateS1(messageFormat) {
   return handshakeBytes;
 }
 
-function generateS2(messageFormat, clientsig, callback?) {
+function generateS2(messageFormat: any, clientsig: any, callback?: any) {
   let randomBytes = Crypto.randomBytes(RTMP_SIG_SIZE - 32);
   let challengeKeyOffset;
   if (messageFormat === 1) {
@@ -94,7 +94,7 @@ function generateS2(messageFormat, clientsig, callback?) {
   return s2Bytes;
 }
 
-function generateS0S1S2(clientsig) {
+function generateS0S1S2(clientsig: any) {
   let clientType = Buffer.alloc(1, 3);
   let messageFormat = detectClientMessageFormat(clientsig);
   let allBytes;

@@ -6,11 +6,12 @@
 
 import EventEmitter from 'events';
 
-import Logger from './node_core_logger';
+import Logger from '../node_core_logger';
 import Crypto from 'crypto';
 import Url from 'url';
 import Net from 'net';
-import AMF from './node_core_amf';
+import AMF from '../node_core_amf';
+import { createRtmpPacket } from './utils';
 
 const FLASHVER = 'LNX 9,0,124,2';
 const RTMP_OUT_CHUNK_SIZE = 60000;
@@ -86,48 +87,30 @@ const RTMP_TRANSACTION_CONNECT = 1;
 const RTMP_TRANSACTION_CREATE_STREAM = 2;
 const RTMP_TRANSACTION_GET_STREAM_LENGTH = 3;
 
-const RtmpPacket = {
-  create: (fmt = 0, cid = 0) => {
-    return {
-      header: {
-        fmt: fmt,
-        cid: cid,
-        timestamp: 0,
-        length: 0,
-        type: 0,
-        stream_id: 0
-      },
-      clock: 0,
-      delta: 0,
-      payload: null,
-      capacity: 0,
-      bytes: 0
-    };
-  }
-};
+
 
 class NodeRtmpClient {
-	public url: any;
-	public info: any;
-	public isPublish: any;
-	public launcher: any;
-	public handshakePayload: any;
-	public handshakeState: any;
-	public handshakeBytes: any;
-	public parserBuffer: any;
-	public parserState: any;
-	public parserBytes: any;
-	public parserBasicBytes: any;
-	public parserPacket: any;
-	public inPackets: any;
-	public inChunkSize: any;
-	public outChunkSize: any;
-	public streamId: any;
-	public isSocketOpen: any;
-	public socket: any;
-	public ackSize: any;
+  public url: any;
+  public info: any;
+  public isPublish: any;
+  public launcher: any;
+  public handshakePayload: any;
+  public handshakeState: any;
+  public handshakeBytes: any;
+  public parserBuffer: any;
+  public parserState: any;
+  public parserBytes: any;
+  public parserBasicBytes: any;
+  public parserPacket: any;
+  public inPackets: any;
+  public inChunkSize: any;
+  public outChunkSize: any;
+  public streamId: any;
+  public isSocketOpen: any;
+  public socket: any;
+  public ackSize: any;
 
-  constructor(rtmpUrl) {
+  constructor(rtmpUrl: string) {
     this.url = rtmpUrl;
     this.info = this.rtmpUrlParser(rtmpUrl);
     this.isPublish = false;
@@ -151,7 +134,7 @@ class NodeRtmpClient {
     this.isSocketOpen = false;
   }
 
-  onSocketData(data) {
+  onSocketData(data: Buffer) {
     let bytes = data.length;
     let p = 0;
     let n = 0;
@@ -204,7 +187,7 @@ class NodeRtmpClient {
     }
   }
 
-  onSocketError(e) {
+  onSocketError(e: any) {
     Logger.error('rtmp_client', 'onSocketError', e);
     this.isSocketOpen = false;
     this.stop();
@@ -222,7 +205,7 @@ class NodeRtmpClient {
     this.stop();
   }
 
-  on(event, callback) {
+  on(event: any, callback: any) {
     this.launcher.on(event, callback);
   }
 
@@ -266,47 +249,73 @@ class NodeRtmpClient {
     }
   }
 
-  pushAudio(audioData, timestamp) {
+  pushAudio(audioData: any, timestamp: any) {
     if (this.streamId == 0) return;
-    let packet = RtmpPacket.create();
-    packet.header.fmt = RTMP_CHUNK_TYPE_0;
-    packet.header.cid = RTMP_CHANNEL_AUDIO;
-    packet.header.type = RTMP_TYPE_AUDIO;
-    packet.payload = audioData;
-    packet.header.length = packet.payload.length;
-    packet.header.timestamp = timestamp;
+    let packet = createRtmpPacket({
+      payload: audioData,
+      cid: RTMP_CHANNEL_AUDIO,
+      fmt: RTMP_CHUNK_TYPE_0,
+      type: RTMP_TYPE_AUDIO,
+      timestamp,
+    });
+
+    // let packet = RtmpPacket.create();
+    // packet.header.fmt = RTMP_CHUNK_TYPE_0;
+    // packet.header.cid = RTMP_CHANNEL_AUDIO;
+    // packet.header.type = RTMP_TYPE_AUDIO;
+    // packet.payload = audioData;
+    // packet.header.length = packet.payload.length;
+    // packet.header.timestamp = timestamp;
     let rtmpChunks = this.rtmpChunksCreate(packet);
     this.socket.write(rtmpChunks);
   }
 
-  pushVideo(videoData, timestamp) {
+  pushVideo(videoData: any, timestamp: any) {
     if (this.streamId == 0) return;
-    let packet = RtmpPacket.create();
-    packet.header.fmt = RTMP_CHUNK_TYPE_0;
-    packet.header.cid = RTMP_CHANNEL_VIDEO;
-    packet.header.type = RTMP_TYPE_VIDEO;
-    packet.payload = videoData;
-    packet.header.length = packet.payload.length;
-    packet.header.timestamp = timestamp;
+
+    let packet = createRtmpPacket({
+      payload: videoData,
+      cid: RTMP_CHANNEL_VIDEO,
+      fmt: RTMP_CHUNK_TYPE_0,
+      type: RTMP_TYPE_VIDEO,
+      timestamp,
+    });
+
+    // let packet = RtmpPacket.create();
+    // packet.header.fmt = RTMP_CHUNK_TYPE_0;
+    // packet.header.cid = RTMP_CHANNEL_VIDEO;
+    // packet.header.type = RTMP_TYPE_VIDEO;
+    // packet.payload = videoData;
+    // packet.header.length = packet.payload.length;
+    // packet.header.timestamp = timestamp;
     let rtmpChunks = this.rtmpChunksCreate(packet);
     this.socket.write(rtmpChunks);
   }
 
-  pushScript(scriptData, timestamp) {
+  pushScript(scriptData: any, timestamp: any) {
     if (this.streamId == 0) return;
-    let packet = RtmpPacket.create();
-    packet.header.fmt = RTMP_CHUNK_TYPE_0;
-    packet.header.cid = RTMP_CHANNEL_DATA;
-    packet.header.type = RTMP_TYPE_DATA;
-    packet.payload = scriptData;
-    packet.header.length = packet.payload.length;
-    packet.header.timestamp = timestamp;
+
+    let packet = createRtmpPacket({
+      payload: scriptData,
+      cid: RTMP_CHANNEL_DATA,
+      fmt: RTMP_CHUNK_TYPE_0,
+      type: RTMP_TYPE_DATA,
+      timestamp,
+    });
+
+    // let packet = RtmpPacket.create();
+    // packet.header.fmt = RTMP_CHUNK_TYPE_0;
+    // packet.header.cid = RTMP_CHANNEL_DATA;
+    // packet.header.type = RTMP_TYPE_DATA;
+    // packet.payload = scriptData;
+    // packet.header.length = packet.payload.length;
+    // packet.header.timestamp = timestamp;
     let rtmpChunks = this.rtmpChunksCreate(packet);
     this.socket.write(rtmpChunks);
   }
 
-  rtmpUrlParser(url) {
-    let urlInfo = Url.parse(url, true);
+  rtmpUrlParser(url: string) {
+    let urlInfo: any = Url.parse(url, true);
     urlInfo.app = urlInfo.path.split('/')[1];
     urlInfo.port = urlInfo.port ? urlInfo.port : RTMP_PORT;
     urlInfo.tcurl = urlInfo.href.match(/rtmp:\/\/([^\/]+)\/([^\/]+)/)[0];
@@ -314,7 +323,7 @@ class NodeRtmpClient {
     return urlInfo;
   }
 
-  rtmpChunkBasicHeaderCreate(fmt, cid) {
+  rtmpChunkBasicHeaderCreate(fmt: any, cid: any) {
     let out;
     if (cid >= 64 + 255) {
       out = Buffer.alloc(3);
@@ -332,7 +341,7 @@ class NodeRtmpClient {
     return out;
   }
 
-  rtmpChunkMessageHeaderCreate(header) {
+  rtmpChunkMessageHeaderCreate(header: any) {
     let out = Buffer.alloc(rtmpHeaderSize[header.fmt % 4]);
     if (header.fmt <= RTMP_CHUNK_TYPE_2) {
       out.writeUIntBE(header.timestamp >= 0xffffff ? 0xffffff : header.timestamp, 0, 3);
@@ -349,7 +358,7 @@ class NodeRtmpClient {
     return out;
   }
 
-  rtmpChunksCreate(packet) {
+  rtmpChunksCreate(packet: any) {
     let header = packet.header;
     let payload = packet.payload;
     let payloadSize = header.length;
@@ -405,7 +414,7 @@ class NodeRtmpClient {
     return chunks;
   }
 
-  rtmpChunkRead(data, p, bytes) {
+  rtmpChunkRead(data: any, p: any, bytes: any) {
     let size = 0;
     let offset = 0;
     let extended_timestamp = 0;
@@ -499,7 +508,22 @@ class NodeRtmpClient {
     }
     let hasp = this.inPackets.has(cid);
     if (!hasp) {
-      this.parserPacket = RtmpPacket.create(fmt, cid);
+      this.parserPacket = {
+        header: {
+          fmt: fmt,
+          cid: cid,
+          timestamp: 0,
+          length: 0,
+          type: 0,
+          stream_id: 0
+        },
+        clock: 0,
+        delta: 0,
+        payload: null,
+        capacity: 0,
+        bytes: 0
+      };
+
       this.inPackets.set(cid, this.parserPacket);
     } else {
       this.parserPacket = this.inPackets.get(cid);
@@ -548,9 +572,11 @@ class NodeRtmpClient {
       case RTMP_TYPE_ACKNOWLEDGEMENT:
       case RTMP_TYPE_WINDOW_ACKNOWLEDGEMENT_SIZE:
       case RTMP_TYPE_SET_PEER_BANDWIDTH:
-        return 0 === this.rtmpControlHandler() ? -1 : 0;
+        return 0;
+      // return 0 === this.rtmpControlHandler() ? -1 : 0;
       case RTMP_TYPE_EVENT:
-        return 0 === this.rtmpEventHandler() ? -1 : 0;
+        return 0;
+      // return 0 === this.rtmpEventHandler() ? -1 : 0;
       case RTMP_TYPE_AUDIO:
         return this.rtmpAudioHandler();
       case RTMP_TYPE_VIDEO:
@@ -615,7 +641,7 @@ class NodeRtmpClient {
     }
   }
 
-  rtmpCommandOnresult(invokeMessage) {
+  rtmpCommandOnresult(invokeMessage: any) {
     // Logger.debug(invokeMessage);
     switch (invokeMessage.transId) {
       case RTMP_TRANSACTION_CONNECT:
@@ -628,11 +654,11 @@ class NodeRtmpClient {
     }
   }
 
-  rtmpCommandOnerror(invokeMessage) {
+  rtmpCommandOnerror(invokeMessage: any) {
     this.launcher.emit('status', invokeMessage.info);
   }
 
-  rtmpCommandOnstatus(invokeMessage) {
+  rtmpCommandOnstatus(invokeMessage: any) {
     this.launcher.emit('status', invokeMessage.info);
   }
 
@@ -644,7 +670,7 @@ class NodeRtmpClient {
     this.rtmpSendCreateStream();
   }
 
-  rtmpOncreateStream(sid) {
+  rtmpOncreateStream(sid: any) {
     this.streamId = sid;
     if (this.isPublish) {
       this.rtmpSendPublish();
@@ -670,14 +696,22 @@ class NodeRtmpClient {
     this.launcher.emit('script', payload, this.parserPacket.clock);
   }
 
-  sendInvokeMessage(sid, opt) {
-    let packet = RtmpPacket.create();
-    packet.header.fmt = RTMP_CHUNK_TYPE_0;
-    packet.header.cid = RTMP_CHANNEL_INVOKE;
-    packet.header.type = RTMP_TYPE_INVOKE;
+  sendInvokeMessage(sid: any, opt: any) {
+    let packet = createRtmpPacket({
+      payload: AMF.encodeAmf0Cmd(opt),
+      cid: RTMP_CHANNEL_INVOKE,
+      fmt: RTMP_CHUNK_TYPE_0,
+      type: RTMP_TYPE_INVOKE,
+    });
     packet.header.stream_id = sid;
-    packet.payload = AMF.encodeAmf0Cmd(opt);
-    packet.header.length = packet.payload.length;
+
+    // let packet = RtmpPacket.create();
+    // packet.header.fmt = RTMP_CHUNK_TYPE_0;
+    // packet.header.cid = RTMP_CHANNEL_INVOKE;
+    // packet.header.type = RTMP_TYPE_INVOKE;
+    // packet.header.stream_id = sid;
+    // packet.payload = AMF.encodeAmf0Cmd(opt);
+    // packet.header.length = packet.payload.length;
     let chunks = this.rtmpChunksCreate(packet);
     this.socket.write(chunks);
   }
@@ -743,13 +777,20 @@ class NodeRtmpClient {
     this.sendInvokeMessage(this.streamId, opt);
   }
 
-  rtmpSendSetBufferLength(bufferTime) {
-    let packet = RtmpPacket.create();
-    packet.header.fmt = RTMP_CHUNK_TYPE_0;
-    packet.header.cid = RTMP_CHANNEL_PROTOCOL;
-    packet.header.type = RTMP_TYPE_EVENT;
-    packet.payload = Buffer.alloc(10);
-    packet.header.length = packet.payload.length;
+  rtmpSendSetBufferLength(bufferTime: any) {
+    let packet = createRtmpPacket({
+      payload: Buffer.alloc(10),
+      cid: RTMP_CHANNEL_PROTOCOL,
+      fmt: RTMP_CHUNK_TYPE_0,
+      type: RTMP_TYPE_EVENT,
+    });
+
+    // let packet = RtmpPacket.create();
+    // packet.header.fmt = RTMP_CHUNK_TYPE_0;
+    // packet.header.cid = RTMP_CHANNEL_PROTOCOL;
+    // packet.header.type = RTMP_TYPE_EVENT;
+    // packet.payload = Buffer.alloc(10);
+    // packet.header.length = packet.payload.length;
     packet.payload.writeUInt16BE(0x03);
     packet.payload.writeUInt32BE(this.streamId, 2);
     packet.payload.writeUInt32BE(bufferTime, 6);
@@ -795,13 +836,21 @@ class NodeRtmpClient {
     this.sendInvokeMessage(this.streamId, opt);
   }
 
-  rtmpSendPingResponse(time) {
-    let packet = RtmpPacket.create();
-    packet.header.fmt = RTMP_CHUNK_TYPE_0;
-    packet.header.cid = RTMP_CHANNEL_PROTOCOL;
-    packet.header.type = RTMP_TYPE_EVENT;
-    packet.payload = Buffer.alloc(6);
-    packet.header.length = packet.payload.length;
+  rtmpSendPingResponse(time: any) {
+    let packet = createRtmpPacket({
+      payload: Buffer.alloc(6),
+      cid: RTMP_CHANNEL_PROTOCOL,
+      fmt: RTMP_CHUNK_TYPE_0,
+      type: RTMP_TYPE_EVENT,
+    });
+
+
+    // let packet = RtmpPacket.create();
+    // packet.header.fmt = RTMP_CHUNK_TYPE_0;
+    // packet.header.cid = RTMP_CHANNEL_PROTOCOL;
+    // packet.header.type = RTMP_TYPE_EVENT;
+    // packet.payload = Buffer.alloc(6);
+    // packet.header.length = packet.payload.length;
     packet.payload.writeUInt16BE(0x07);
     packet.payload.writeUInt32BE(time, 2);
     let chunks = this.rtmpChunksCreate(packet);
