@@ -4,7 +4,7 @@ import {
   getAACProfileName, getAVCProfileName, readAACSpecificConfig, readAVCSpecificConfig
 } from '../../processor/node_core_av';
 import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from '../../processor/node_core_av';
-import AMF from '../../node_core_amf';
+import * as AMF from '../../processor/node_core_amf';
 import Handshake from '../../node_rtmp_handshake';
 import NodeCoreUtils from '../../node_core_utils';
 import context from '../../node_core_ctx';

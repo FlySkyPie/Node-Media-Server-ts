@@ -10,7 +10,7 @@ import Logger from '../node_core_logger';
 import Crypto from 'crypto';
 import Url from 'url';
 import Net from 'net';
-import AMF from '../node_core_amf';
+import * as AMF from '../processor/node_core_amf';
 import { createRtmpPacket } from './utils';
 
 const FLASHVER = 'LNX 9,0,124,2';
