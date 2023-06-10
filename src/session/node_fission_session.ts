@@ -1,19 +1,22 @@
-//
-//  Created by Chen Mingliang on 20/7/16.
-//  illuspas[a]msn.com
-//  Copyright (c) 2020 Nodemedia. All rights reserved.
-//
-import Logger from './node_core_logger';
-
 import EventEmitter from 'events';
-import {spawn} from 'child_process';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+
+import Logger from '../node_core_logger';
+
+type IConfig = {
+  rtmpPort: any;
+  streamApp: any;
+  streamName: any;
+  model: any;
+  ffmpeg: any;
+  streamPath: any;
+};
 
 class NodeFissionSession extends EventEmitter {
-	public conf: any;
-	public ffmpeg_exec: any;
-	public emit: any;
+  public conf: IConfig;
+  public ffmpeg_exec?: ChildProcessWithoutNullStreams;
 
-  constructor(conf) {
+  constructor(conf: IConfig) {
     super();
     this.conf = conf;
   }
@@ -32,26 +35,26 @@ class NodeFissionSession extends EventEmitter {
 
     argv = argv.filter((n) => { return n; });
     this.ffmpeg_exec = spawn(this.conf.ffmpeg, argv);
-    this.ffmpeg_exec.on('error', (e:any) => {
+    this.ffmpeg_exec.on('error', (e: any) => {
       Logger.ffdebug(e);
     });
 
-    this.ffmpeg_exec.stdout.on('data', (data) => {
+    this.ffmpeg_exec.stdout.on('data', (data: any) => {
       Logger.ffdebug(`FF_LOG:${data}`);
     });
 
-    this.ffmpeg_exec.stderr.on('data', (data) => {
+    this.ffmpeg_exec.stderr.on('data', (data: any) => {
       Logger.ffdebug(`FF_LOG:${data}`);
     });
 
-    this.ffmpeg_exec.on('close', (code) => {
+    this.ffmpeg_exec.on('close', (code: any) => {
       Logger.log('[Fission end] ' + this.conf.streamPath);
       this.emit('end');
     });
   }
 
   end() {
-    this.ffmpeg_exec.kill();
+    this.ffmpeg_exec?.kill();
   }
 }
 

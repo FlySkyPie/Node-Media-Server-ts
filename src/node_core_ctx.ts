@@ -11,6 +11,8 @@ export const publisherSessions = new Map<any, IPublisherSession>();
 
 export const playerSessions = new Map<any, any>();
 
+export const sessions = new Map<any, any>();
+
 export const publishers = new Map();
 
 export const idlePlayers = new Set();
@@ -23,4 +25,4 @@ export const stat = {
   accepted: 0
 };
 
-export default { publisherSessions, publishers, idlePlayers, nodeEvent, stat };
+export default { publisherSessions, publishers, idlePlayers, nodeEvent, stat, sessions };

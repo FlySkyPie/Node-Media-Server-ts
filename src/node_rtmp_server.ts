@@ -9,7 +9,7 @@ import Fs from 'fs';
 import Net from 'net';
 
 import Logger from './node_core_logger';
-import NodeRtmpSession from './node_rtmp_session';
+import NodeRtmpSession from './session/node_rtmp_session';
 import context from './node_core_ctx';
 
 const RTMP_PORT = 1935;

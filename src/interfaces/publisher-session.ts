@@ -7,15 +7,15 @@ export interface IPublisherSession {
 
     isFirstVideoReceived: boolean;
 
-    metaData: Buffer;
+    metaData: Buffer | null;
 
     audioCodec: number;
 
     videoCodec: number;
 
-    aacSequenceHeader: Buffer;
+    aacSequenceHeader: Buffer | null;
 
-    avcSequenceHeader: Buffer;
+    avcSequenceHeader: Buffer | null;
 
     flvGopCacheQueue: any;
 
@@ -23,9 +23,9 @@ export interface IPublisherSession {
 
     parserPacket: any;
 
-    sendStatusMessage: (...arg: any) => void;
-
     playStreamId: any;
+
+    sendStatusMessage: (...arg: any) => void;
 
     flush: () => void;
 }

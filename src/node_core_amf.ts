@@ -969,15 +969,19 @@ const rtmpDataCode = {
   '|RtmpSampleAccess': ['bool1', 'bool2'],
 };
 
+type DecodeAmf0DataResult = {
+  cmd: any,
+  [key: string]: any;
+};
 
 /**
  * Decode a data!
  * @param dbuf
  * @returns {{cmd: (*|string|String|*), value: *}}
  */
-function decodeAmf0Data(dbuf) {
+function decodeAmf0Data(dbuf: any): DecodeAmf0DataResult {
   let buffer = dbuf;
-  let resp = {};
+  let resp: any = {};
 
   let cmd = amf0DecodeOne(buffer);
   if (cmd) {
@@ -1002,14 +1006,19 @@ function decodeAmf0Data(dbuf) {
   return resp;
 }
 
+type DecodeAMF0CmdResult = {
+  cmd: any;
+  [key: string]: any;
+};
+
 /**
  * Decode a command!
  * @param dbuf
  * @returns {{cmd: (*|string|String|*), value: *}}
  */
-function decodeAMF0Cmd(dbuf) {
+function decodeAMF0Cmd(dbuf: any): DecodeAMF0CmdResult {
   let buffer = dbuf;
-  let resp = {};
+  let resp: any = {};
 
   let cmd = amf0DecodeOne(buffer);
   resp.cmd = cmd.value;

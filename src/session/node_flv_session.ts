@@ -1,31 +1,26 @@
-//
-//  Created by Mingliang Chen on 17/8/4.
-//  illuspas[a]gmail.com
-//  Copyright (c) 2018 Nodemedia. All rights reserved.
-//
 import URL from 'url';
 
-import Logger from './node_core_logger';
-import context, { playerSessions } from './node_core_ctx';
-import NodeCoreUtils from './node_core_utils';
+import Logger from '../node_core_logger';
+import context from '../node_core_ctx';
+import NodeCoreUtils from '../node_core_utils';
 
-type IPacket = {
-  header: {
-    length: number;
-    timestamp: number;
-    type: number;
-  },
-  payload: Buffer | null;
+type ICreatePacketParams = {
+  payload: Buffer | null,
+  type?: number,
+  time?: number
 };
 
-const createPacket = (payload: Buffer | null = null, type = 0, time = 0): IPacket => ({
-  header: {
-    length: payload ? payload.length : 0,
-    timestamp: time,
-    type: type
-  },
-  payload: payload
-});
+const createPacket = ({
+  payload = null,
+  time = 0,
+  type = 0 }: ICreatePacketParams) => ({
+    header: {
+      length: payload ? payload.length : 0,
+      timestamp: time,
+      type: type
+    },
+    payload,
+  });
 
 class NodeFlvSession {
   public config: any;
@@ -35,9 +30,9 @@ class NodeFlvSession {
   public ip: any;
   public playStreamPath: any;
   public playArgs: any;
-  public isStarting: boolean;
-  public isPlaying: boolean;
-  public isIdling: boolean;
+  public isStarting: any;
+  public isPlaying: any;
+  public isIdling: any;
   public TAG: any;
   public numPlayCache: any;
   public connectCmdObj: any;
@@ -74,13 +69,18 @@ class NodeFlvSession {
     }
 
     this.numPlayCache = 0;
-    playerSessions.set(this.id, this);
+    context.sessions.set(this.id, this);
   }
 
   run() {
     let method = this.req.method;
     let urlInfo = URL.parse(this.req.url, true);
-    let streamPath = urlInfo.pathname!.split('.')[0];
+
+    if (!urlInfo.pathname) {
+      throw new Error("pathname is null");
+    }
+
+    let streamPath = urlInfo.pathname.split('.')[0];
     this.connectCmdObj = { ip: this.ip, method, streamPath, query: urlInfo.query };
     this.connectTime = new Date();
     this.isStarting = true;
@@ -106,8 +106,8 @@ class NodeFlvSession {
     if (this.isStarting) {
       this.isStarting = false;
       let publisherId = context.publishers.get(this.playStreamPath);
-      if (publisherId !== null) {
-        context.publisherSessions.get(publisherId)!.players.delete(this.id);
+      if (publisherId != null) {
+        context.sessions.get(publisherId).players.delete(this.id);
         context.nodeEvent.emit('donePlay', this.id, this.playStreamPath, this.playArgs);
       }
       Logger.log(`[${this.TAG} play] Close stream. id=${this.id} streamPath=${this.playStreamPath}`);
@@ -115,7 +115,7 @@ class NodeFlvSession {
       context.nodeEvent.emit('doneConnect', this.id, this.connectCmdObj);
       this.res.end();
       context.idlePlayers.delete(this.id);
-      context.publisherSessions.delete(this.id);
+      context.sessions.delete(this.id);
     }
   }
 
@@ -159,12 +159,7 @@ class NodeFlvSession {
 
   onStartPlay() {
     let publisherId = context.publishers.get(this.playStreamPath);
-    let publisher = context.publisherSessions.get(publisherId);
-
-    if (!publisher) {
-      throw new Error("publisher is undefined!");
-    }
-
+    let publisher = context.sessions.get(publisherId);
     let players = publisher.players;
     players.add(this.id);
 
@@ -181,21 +176,36 @@ class NodeFlvSession {
 
     //send Metadata
     if (publisher.metaData != null) {
-      let packet = createPacket(publisher.metaData, 18);
+      let packet = createPacket({
+        payload: publisher.metaData,
+        type: 18
+      });
+
+      // let packet = FlvPacket.create(publisher.metaData, 18);
       let tag = NodeFlvSession.createFlvTag(packet);
       this.res.write(tag);
     }
 
     //send aacSequenceHeader
     if (publisher.audioCodec == 10) {
-      let packet = createPacket(publisher.aacSequenceHeader, 8);
+      let packet = createPacket({
+        payload: publisher.aacSequenceHeader,
+        type: 8
+      });
+
+      // let packet = FlvPacket.create(publisher.aacSequenceHeader, 8);
       let tag = NodeFlvSession.createFlvTag(packet);
       this.res.write(tag);
     }
 
     //send avcSequenceHeader
     if (publisher.videoCodec == 7 || publisher.videoCodec == 12) {
-      let packet = createPacket(publisher.avcSequenceHeader, 9);
+      let packet = createPacket({
+        payload: publisher.avcSequenceHeader,
+        type: 9
+      });
+
+      // let packet = FlvPacket.create(publisher.avcSequenceHeader, 9);
       let tag = NodeFlvSession.createFlvTag(packet);
       this.res.write(tag);
     }
@@ -213,7 +223,7 @@ class NodeFlvSession {
     context.nodeEvent.emit('postPlay', this.id, this.playStreamPath, this.playArgs);
   }
 
-  static createFlvTag(packet: IPacket) {
+  static createFlvTag(packet: any) {
     let PreviousTagSize = 11 + packet.header.length;
     let tagBuffer = Buffer.alloc(PreviousTagSize + 4);
     tagBuffer[0] = packet.header.type;
@@ -224,11 +234,6 @@ class NodeFlvSession {
     tagBuffer[7] = (packet.header.timestamp >> 24) & 0xff;
     tagBuffer.writeUIntBE(0, 8, 3);
     tagBuffer.writeUInt32BE(PreviousTagSize, PreviousTagSize);
-
-    if (!packet.payload) {
-      throw new Error('packet.payload is null');
-    }
-
     packet.payload.copy(tagBuffer, 11, 0, packet.header.length);
     return tagBuffer;
   }

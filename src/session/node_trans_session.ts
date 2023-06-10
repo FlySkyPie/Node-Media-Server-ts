@@ -3,25 +3,25 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-import Logger from './node_core_logger';
-
 import EventEmitter from 'events';
-import {spawn} from 'child_process';
+import { spawn } from 'child_process';
 import dateFormat from 'dateformat';
 import mkdirp from 'mkdirp';
 import fs from 'fs';
 
-const isHlsFile = (filename) => filename.endsWith('.ts') || filename.endsWith('.m3u8')
-const isTemFiles = (filename) => filename.endsWith('.tmp')
-const isDashFile = (filename) => filename.endsWith('.mpd') || filename.endsWith('.m4s')
+import Logger from '../node_core_logger';
+
+const isHlsFile = (filename: string) => filename.endsWith('.ts') || filename.endsWith('.m3u8')
+const isTemFiles = (filename: string) => filename.endsWith('.tmp')
+const isDashFile = (filename: string) => filename.endsWith('.mpd') || filename.endsWith('.m4s')
 
 class NodeTransSession extends EventEmitter {
-	public conf: any;
-	public getConfig: any;
-	public ffmpeg_exec: any;
-	public emit: any;
+  public conf: any;
+  public getConfig: any;
+  public ffmpeg_exec: any;
+  public emit: any;
 
-  constructor(conf) {
+  constructor(conf: any) {
     super();
     this.conf = conf;
     this.getConfig = (key = null) => {
@@ -77,21 +77,21 @@ class NodeTransSession extends EventEmitter {
     Array.prototype.push.apply(argv, this.conf.acParam);
     Array.prototype.push.apply(argv, ['-f', 'tee', '-map', '0:a?', '-map', '0:v?', mapStr]);
     argv = argv.filter((n) => { return n; }); //去空
-    
+
     this.ffmpeg_exec = spawn(this.conf.ffmpeg, argv);
-    this.ffmpeg_exec.on('error', (e:any) => {
+    this.ffmpeg_exec.on('error', (e: any) => {
       Logger.ffdebug(e);
     });
 
-    this.ffmpeg_exec.stdout.on('data', (data) => {
+    this.ffmpeg_exec.stdout.on('data', (data: any) => {
       Logger.ffdebug(`FF_LOG:${data}`);
     });
 
-    this.ffmpeg_exec.stderr.on('data', (data) => {
+    this.ffmpeg_exec.stderr.on('data', (data: any) => {
       Logger.ffdebug(`FF_LOG:${data}`);
     });
 
-    this.ffmpeg_exec.on('close', (code) => {
+    this.ffmpeg_exec.on('close', (code: any) => {
       Logger.log('[Transmuxing end] ' + this.conf.streamPath);
       this.emit('end');
       this.cleanTempFiles(ouPath)
@@ -104,7 +104,7 @@ class NodeTransSession extends EventEmitter {
   }
 
   // delete hls files
-  deleteHlsFiles (ouPath) {
+  deleteHlsFiles(ouPath: string) {
     if ((!ouPath && !this.conf.hls) || this.getConfig('hlsKeep')) return
     fs.readdir(ouPath, function (err, files) {
       if (err) return
@@ -115,18 +115,18 @@ class NodeTransSession extends EventEmitter {
   }
 
   // delete the other files
-  cleanTempFiles (ouPath) {
+  cleanTempFiles(ouPath: string) {
     if (!ouPath) return
     var _this = this;
     fs.readdir(ouPath, function (err, files) {
       if (err) return
-      if(_this.getConfig('dashKeep')){
+      if (_this.getConfig('dashKeep')) {
         files.filter((filename) => isTemFiles(filename)).forEach((filename) => {
           fs.unlinkSync(`${ouPath}/${filename}`);
         });
       }
       else {
-        files.filter((filename) => isTemFiles(filename)||isDashFile(filename)).forEach((filename) => {
+        files.filter((filename) => isTemFiles(filename) || isDashFile(filename)).forEach((filename) => {
           fs.unlinkSync(`${ouPath}/${filename}`);
         });
       }

@@ -1,13 +1,8 @@
-//
-//  Created by Mingliang Chen on 18/3/16.
-//  illuspas[a]gmail.com
-//  Copyright (c) 2018 Nodemedia. All rights reserved.
-//
-import Logger from './node_core_logger';
-
-import NodeCoreUtils from './node_core_utils';
 import EventEmitter from 'events';
 import { spawn } from 'child_process';
+
+import Logger from '../node_core_logger';
+import NodeCoreUtils from '../node_core_utils';
 
 const RTSP_TRANSPORT = ['udp', 'tcp', 'udp_multicast', 'http'];
 
@@ -18,9 +13,8 @@ class NodeRelaySession extends EventEmitter {
   public TAG: any;
   public ffmpeg_exec: any;
   public emit: any;
-  public streamPath: any;
 
-  constructor(conf) {
+  constructor(conf: any) {
     super();
     this.conf = conf;
     this.id = NodeCoreUtils.generateNewSessionID();
@@ -50,15 +44,15 @@ class NodeRelaySession extends EventEmitter {
       Logger.ffdebug(e);
     });
 
-    this.ffmpeg_exec.stdout.on('data', (data) => {
+    this.ffmpeg_exec.stdout.on('data', (data: any) => {
       Logger.ffdebug(`FF_LOG:${data}`);
     });
 
-    this.ffmpeg_exec.stderr.on('data', (data) => {
+    this.ffmpeg_exec.stderr.on('data', (data: any) => {
       Logger.ffdebug(`FF_LOG:${data}`);
     });
 
-    this.ffmpeg_exec.on('close', (code) => {
+    this.ffmpeg_exec.on('close', (code: any) => {
       Logger.log('[relay end] id=' + this.id, 'code=' + code);
       this.emit('end', this.id);
     });
