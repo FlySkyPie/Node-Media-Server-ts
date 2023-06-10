@@ -3,7 +3,7 @@ import Fs from 'fs';
 import path from 'path';
 import Http from 'http';
 import Https from 'https';
-import WebSocket from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import Express from 'express';
 import bodyParser from 'body-parser';
 import basicAuth from 'basic-auth-connect';
@@ -104,7 +104,8 @@ class NodeHttpServer {
       Logger.log('Node Media Http Server Close.');
     });
 
-    this.wsServer = new WebSocket.Server({ server: this.httpServer });
+    console.log(WebSocketServer)
+    this.wsServer = new WebSocketServer({ server: this.httpServer });
 
     this.wsServer.on('connection', (ws: any, req: any) => {
       req.nmsConnectionType = 'ws';
@@ -131,7 +132,7 @@ class NodeHttpServer {
         Logger.log('Node Media Https Server Close.');
       });
 
-      this.wssServer = new WebSocket.Server({ server: this.httpsServer });
+      this.wssServer = new WebSocketServer({ server: this.httpsServer });
 
       this.wssServer.on('connection', (ws: any, req: any) => {
         req.nmsConnectionType = 'ws';
