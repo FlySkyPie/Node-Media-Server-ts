@@ -16,7 +16,7 @@ function generateNewSessionID() {
     for (let i = 0; i < 8; i++) {
       sessionID += possible.charAt((Math.random() * numPossible) | 0);
     }
-  } while (context.publisherSessions.has(sessionID));
+  } while (context.sessions.has(sessionID));
   return sessionID;
 }
 

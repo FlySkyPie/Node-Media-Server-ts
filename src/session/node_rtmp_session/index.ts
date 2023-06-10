@@ -1,7 +1,9 @@
 import QueryString from 'querystring';
 
-import AV from '../../node_core_av';
-import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from '../../node_core_av';
+import {
+  getAACProfileName, getAVCProfileName, readAACSpecificConfig, readAVCSpecificConfig
+} from '../../processor/node_core_av';
+import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from '../../processor/node_core_av';
 import AMF from '../../node_core_amf';
 import Handshake from '../../node_rtmp_handshake';
 import NodeCoreUtils from '../../node_core_utils';
@@ -721,8 +723,8 @@ class NodeRtmpSession {
       this.aacSequenceHeader = Buffer.alloc(payload.length);
       payload.copy(this.aacSequenceHeader);
       if (sound_format == 10) {
-        let info = AV.readAACSpecificConfig(this.aacSequenceHeader);
-        this.audioProfileName = AV.getAACProfileName(info);
+        let info = readAACSpecificConfig(this.aacSequenceHeader);
+        this.audioProfileName = getAACProfileName(info);
         this.audioSamplerate = info.sample_rate;
         this.audioChannels = info.channels;
       } else {
@@ -863,10 +865,10 @@ class NodeRtmpSession {
       if (frame_type == 1 && payload[1] == 0) {
         this.avcSequenceHeader = Buffer.alloc(payload.length);
         payload.copy(this.avcSequenceHeader);
-        let info = AV.readAVCSpecificConfig(this.avcSequenceHeader);
+        let info = readAVCSpecificConfig(this.avcSequenceHeader);
         this.videoWidth = info.width;
         this.videoHeight = info.height;
-        this.videoProfileName = AV.getAVCProfileName(info);
+        this.videoProfileName = getAVCProfileName(info);
         this.videoLevel = info.level;
         //Logger.log(`[rtmp publish] avc sequence header`,this.avcSequenceHeader);
       }

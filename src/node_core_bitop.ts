@@ -1,12 +1,12 @@
 
 class Bitop {
-	public buffer: any;
-	public buflen: any;
-	public bufpos: any;
-	public bufoff: any;
-	public iserro: any;
+  public buffer: Buffer;
+  public buflen: number;
+  public bufpos: number;
+  public bufoff: number;
+  public iserro: boolean;
 
-  constructor(buffer) {
+  constructor(buffer: Buffer) {
     this.buffer = buffer;
     this.buflen = buffer.length;
     this.bufpos = 0;
@@ -14,7 +14,7 @@ class Bitop {
     this.iserro = false;
   }
 
-  read(n) {
+  public read(n: number) {
     let v = 0;
     let d = 0;
     while (n) {
@@ -40,7 +40,7 @@ class Bitop {
     return v;
   }
 
-  look(n) {
+  public look(n: number) {
     let p = this.bufpos;
     let o = this.bufoff;
     let v = this.read(n);
@@ -49,7 +49,7 @@ class Bitop {
     return v;
   }
 
-  read_golomb() {
+  public read_golomb() {
     let n;
     for (n = 0; this.read(1) == 0 && !this.iserro; n++);
     return (1 << n) + this.read(n) - 1;
