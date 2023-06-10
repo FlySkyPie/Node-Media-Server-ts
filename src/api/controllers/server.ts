@@ -1,12 +1,11 @@
-//
-//  Created by Mingliang Chen on 17/12/24.  Merry Christmas
-//  illuspas[a]gmail.com
-//  Copyright (c) 2018 Nodemedia. All rights reserved.
-//
 
+import type { NextFunction, Request, Response } from 'express';
 import OS from 'os';
 
 import Package from '../../../package.json';
+
+import context from '../../node_core_ctx';
+
 function cpuAverage() {
 
   //Initialise sum of idle and time of cores and fetch CPU info
@@ -20,8 +19,8 @@ function cpuAverage() {
     let cpu = cpus[i];
 
     //Total up the time in the cores tick
-    for (type in cpu.times) {
-      totalTick += cpu.times[type];
+    for (let type in cpu.times) {
+      totalTick += cpu.times[type as 'user' | 'nice' | 'sys' | 'idle' | 'irq'];
     }
 
     //Total up the idle time of the core
@@ -48,7 +47,7 @@ function percentageCPU() {
   });
 }
 
-function getSessionsInfo(sessions) {
+function getSessionsInfo(sessions: any) {
   let info = {
     inbytes: 0,
     outbytes: 0,
@@ -71,8 +70,8 @@ function getSessionsInfo(sessions) {
 }
 
 
-function getInfo(req, res, next) {
-  let s = this.sessions;
+function getInfo(req: Request, res: Response, next: NextFunction) {
+  let s = context.sessions;
   percentageCPU().then((cpuload) => {
     let sinfo = getSessionsInfo(s);
     let info = {
@@ -92,8 +91,8 @@ function getInfo(req, res, next) {
         free: OS.freemem()
       },
       net: {
-        inbytes: this.stat.inbytes + sinfo.inbytes,
-        outbytes: this.stat.outbytes + sinfo.outbytes,
+        inbytes: context.stat.inbytes + sinfo.inbytes,
+        outbytes: context.stat.outbytes + sinfo.outbytes,
       },
       nodejs: {
         uptime: Math.floor(process.uptime()),
@@ -101,9 +100,9 @@ function getInfo(req, res, next) {
         mem: process.memoryUsage()
       },
       clients: {
-        accepted: this.stat.accepted,
-        active: this.sessions.size - this.idlePlayers.size,
-        idle: this.idlePlayers.size,
+        accepted: context.stat.accepted,
+        active: context.sessions.size - context.idlePlayers.size,
+        idle: context.idlePlayers.size,
         rtmp: sinfo.rtmp,
         http: sinfo.http,
         ws: sinfo.ws
@@ -114,4 +113,4 @@ function getInfo(req, res, next) {
   });
 }
 
-export {getInfo};
+export { getInfo };
