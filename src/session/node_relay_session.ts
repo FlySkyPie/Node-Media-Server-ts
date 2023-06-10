@@ -7,6 +7,7 @@ import NodeCoreUtils from '../node_core_utils';
 const RTSP_TRANSPORT = ['udp', 'tcp', 'udp_multicast', 'http'];
 
 class NodeRelaySession extends EventEmitter {
+  public streamPath: any;
   public conf: any;
   public id: any;
   public ts: any;

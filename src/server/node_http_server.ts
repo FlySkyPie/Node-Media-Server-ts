@@ -1,10 +1,3 @@
-//
-//  Created by Mingliang Chen on 17/8/1.
-//  illuspas[a]gmail.com
-//  Copyright (c) 2018 Nodemedia. All rights reserved.
-//
-
-
 import Fs from 'fs';
 
 import path from 'path';
@@ -15,15 +8,16 @@ import Express from 'express';
 import bodyParser from 'body-parser';
 import basicAuth from 'basic-auth-connect';
 
-import NodeFlvSession from './node_flv_session';
+import NodeFlvSession from '../session/node_flv_session';
+import Logger from '../node_core_logger';
+import context from '../node_core_ctx';
+import streamsRoute from '../api/routes/streams';
+import serverRoute from '../api/routes/server';
+import relayRoute from '../api/routes/relay';
+
 const HTTP_PORT = 80;
 const HTTPS_PORT = 443;
 const HTTP_MEDIAROOT = './media';
-import Logger from './node_core_logger';
-import context from './node_core_ctx';
-import streamsRoute from './api/routes/streams';
-import serverRoute from './api/routes/server';
-import relayRoute from './api/routes/relay';
 
 class NodeHttpServer {
   public port: any;
@@ -161,8 +155,16 @@ class NodeHttpServer {
     });
 
     context.nodeEvent.on('doneConnect', (id, args) => {
-      let session = context.publisherSessions.get(id);
-      let socket = session instanceof NodeFlvSession ? session.req.socket : session.socket;
+      let session = context.sessions.get(id);
+
+      if (!session) {
+        throw new Error("session is undefined");
+      }
+
+      let socket = session instanceof NodeFlvSession ?
+        session.req.socket :
+        (session as any).socket;
+
       context.stat.inbytes += socket.bytesRead;
       context.stat.outbytes += socket.bytesWritten;
     });
@@ -173,10 +175,10 @@ class NodeHttpServer {
     if (this.httpsServer) {
       this.httpsServer.close();
     }
-    context.publisherSessions.forEach((session, id) => {
+    context.sessions.forEach((session, id) => {
       if (session instanceof NodeFlvSession) {
         session.req.destroy();
-        context.publisherSessions.delete(id);
+        context.sessions.delete(id);
       }
     });
   }

@@ -1,16 +1,11 @@
-//
-//  Created by Chen Mingliang on 20/7/16.
-//  illuspas[a]msn.com
-//  Copyright (c) 2020 Nodemedia. All rights reserved.
-//
 import fs from 'fs';
 import _ from 'lodash';
 import mkdirp from 'mkdirp';
 
-import Logger from './node_core_logger';
-import NodeFissionSession from './node_fission_session';
-import context from './node_core_ctx';
-import { getFFmpegVersion, getFFmpegUrl } from './node_core_utils';
+import Logger from '../node_core_logger';
+import NodeFissionSession from '../session/node_fission_session';
+import context from '../node_core_ctx';
+import { getFFmpegVersion, getFFmpegUrl } from '../node_core_utils';
 
 class NodeFissionServer {
   public config: any;
@@ -56,7 +51,12 @@ class NodeFissionServer {
       regRes = /(.*)\/(.*)/gi.exec(task.rule);
       let [ruleApp, ruleName] = _.slice(regRes, 1);
       if ((app === ruleApp || ruleApp === '*') && (name === ruleName || ruleName === '*')) {
-        let s = context.publisherSessions.get(id);
+        let s = context.sessions.get(id);
+
+        if (!s) {
+          throw new Error("s is null");
+        }
+
         if (s.isLocal && name.split('_')[1]) {
           continue;
         }

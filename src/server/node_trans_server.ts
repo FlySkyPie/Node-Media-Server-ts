@@ -8,11 +8,11 @@ import _ from 'lodash';
 import mkdirp from 'mkdirp';
 
 
-import Logger from './node_core_logger';
+import Logger from '../node_core_logger';
 
-import NodeTransSession from './node_trans_session';
-import context from './node_core_ctx';
-import { getFFmpegVersion, getFFmpegUrl } from './node_core_utils';
+import NodeTransSession from '../session/node_trans_session';
+import context from '../node_core_ctx';
+import { getFFmpegVersion, getFFmpegUrl } from '../node_core_utils';
 
 class NodeTransServer {
   public config: any;

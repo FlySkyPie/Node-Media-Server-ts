@@ -7,11 +7,11 @@ import fs from 'fs';
 import querystring from 'querystring';
 import _ from 'lodash';
 
-import Logger from './node_core_logger';
-import NodeCoreUtils from './node_core_utils';
-import NodeRelaySession from './node_relay_session';
-import context from './node_core_ctx';
-import { getFFmpegVersion, getFFmpegUrl } from './node_core_utils';
+import Logger from '../node_core_logger';
+import NodeCoreUtils from '../node_core_utils';
+import NodeRelaySession from '../session/node_relay_session';
+import context from '../node_core_ctx';
+import { getFFmpegVersion, getFFmpegUrl } from '../node_core_utils';
 
 class NodeRelayServer {
   public config: any;
@@ -72,7 +72,7 @@ class NodeRelayServer {
         session.id = i;
         session.streamPath = `/${conf.app}/${conf.name}`;
         session.on('end', (id) => {
-          context.publisherSessions.delete(id);
+          context.sessions.delete(id);
           this.staticSessions.delete(id);
         });
         this.staticSessions.set(i, session);
@@ -91,9 +91,9 @@ class NodeRelayServer {
     conf.ouPath = url;
     let session = new NodeRelaySession(conf);
     const id = session.id;
-    context.publisherSessions.set(id, session);
+    context.sessions.set(id, session);
     session.on('end', (id) => {
-      context.publisherSessions.delete(id);
+      context.sessions.delete(id);
       this.dynamicSessions.delete(id);
     });
     this.dynamicSessions.set(id, session);
@@ -116,9 +116,9 @@ class NodeRelayServer {
     conf.ouPath = `rtmp://127.0.0.1:${this.config.rtmp.port}/${app}/${name}`;
     let session = new NodeRelaySession(conf);
     const id = session.id;
-    context.publisherSessions.set(id, session);
+    context.sessions.set(id, session);
     session.on('end', (id) => {
-      context.publisherSessions.delete(id);
+      context.sessions.delete(id);
       this.dynamicSessions.delete(id);
     });
     this.dynamicSessions.set(id, session);
@@ -139,9 +139,9 @@ class NodeRelayServer {
     conf.ouPath = url;
     let session = new NodeRelaySession(conf);
     const id = session.id;
-    context.publisherSessions.set(id, session);
+    context.sessions.set(id, session);
     session.on('end', (id) => {
-      context.publisherSessions.delete(id);
+      context.sessions.delete(id);
       this.dynamicSessions.delete(id);
     });
     this.dynamicSessions.set(id, session);
@@ -183,7 +183,7 @@ class NodeRelayServer {
 
   onDonePlay(id: any, streamPath?: any, args?: any) {
     let session = this.dynamicSessions.get(id);
-    let publisher = context.publisherSessions.get(context.publishers.get(streamPath));
+    let publisher = context.sessions.get(context.publishers.get(streamPath));
     if (session && publisher.players.size == 0) {
       session.end();
     }

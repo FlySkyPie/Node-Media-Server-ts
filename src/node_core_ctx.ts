@@ -25,4 +25,4 @@ export const stat = {
   accepted: 0
 };
 
-export default { publisherSessions, publishers, idlePlayers, nodeEvent, stat, sessions };
+export default { publishers, idlePlayers, nodeEvent, stat, sessions };

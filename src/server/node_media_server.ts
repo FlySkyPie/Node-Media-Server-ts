@@ -6,15 +6,15 @@
 
 import Https from 'https';
 
-import Package from '../package.json';
+import Package from '../../package.json';
 
-import Logger from './node_core_logger';
+import Logger from '../node_core_logger';
 import NodeRtmpServer from './node_rtmp_server';
 import NodeHttpServer from './node_http_server';
 import NodeTransServer from './node_trans_server';
 import NodeRelayServer from './node_relay_server';
 import NodeFissionServer from './node_fission_server';
-import { nodeEvent, publisherSessions } from './node_core_ctx';
+import { nodeEvent, sessions } from '../node_core_ctx';
 
 type IConfig = {
   logType: any;
@@ -131,7 +131,7 @@ class NodeMediaServer {
   }
 
   public getSession(id: any) {
-    return publisherSessions.get(id);
+    return sessions.get(id);
   }
 }
 

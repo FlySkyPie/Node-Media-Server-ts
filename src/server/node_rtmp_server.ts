@@ -8,9 +8,9 @@ import Tls from 'tls';
 import Fs from 'fs';
 import Net from 'net';
 
-import Logger from './node_core_logger';
-import NodeRtmpSession from './session/node_rtmp_session';
-import context from './node_core_ctx';
+import Logger from '../node_core_logger';
+import NodeRtmpSession from '../session/node_rtmp_session';
+import context from '../node_core_ctx';
 
 const RTMP_PORT = 1935;
 const RTMPS_PORT = 443;
@@ -80,7 +80,7 @@ class NodeRtmpServer {
       this.tlsServer.close();
     }
 
-    context.publisherSessions.forEach((session, id) => {
+    context.sessions.forEach((session, id) => {
       if (session instanceof NodeRtmpSession)
         session.stop();
     });

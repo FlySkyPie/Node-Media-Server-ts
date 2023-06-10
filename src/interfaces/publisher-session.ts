@@ -25,6 +25,8 @@ export interface IPublisherSession {
 
     playStreamId: any;
 
+    isLocal: any;
+
     sendStatusMessage: (...arg: any) => void;
 
     flush: () => void;
