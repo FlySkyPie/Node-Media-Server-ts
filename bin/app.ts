@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import NodeMediaServer from '../src/node_media_server';
+import NodeMediaServer from '../src/server/node_media_server';
 
 let argv = require('minimist')(process.argv.slice(2),
   {

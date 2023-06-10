@@ -1,12 +1,9 @@
-//
-//  Created by Mingliang Chen on 19/4/11.
-//  illuspas[a]gmail.com
-//  Copyright (c) 2019 Nodemedia. All rights reserved.
-//
-import {get, set} from 'lodash';
 
-import Express from 'express';
-import {once} from 'events';
+import type { NextFunction, Request, Response } from 'express';
+import { get, set } from 'lodash';
+import { once } from 'events';
+
+import context from '../../node_core_ctx';
 
 /**
  * get all relay tasks
@@ -14,9 +11,9 @@ import {once} from 'events';
  * @param {Express.Response} res 
  * @param {*} next 
  */
-function getStreams(req, res, next) {
-  let stats = {};
-  this.sessions.forEach(function (session, id) {
+function getStreams(req: Request, res: Response, next: NextFunction) {
+  let stats: any = {};
+  context.sessions.forEach(function (session: any, id: any) {
     if (session.constructor.name !== 'NodeRelaySession') {
       return;
     }
@@ -48,8 +45,8 @@ function getStreams(req, res, next) {
  * @param {Express.Response} res 
  * @param {*} next 
  */
-function getStreamByID(req, res, next) {
-  const relaySession = Array.from(this.sessions.values()).filter(
+function getStreamByID(req: Request, res: Response, next: NextFunction) {
+  const relaySession = Array.from(context.sessions.values()).filter(
     (session) =>
       session.constructor.name === 'NodeRelaySession' &&
       req.params.id === session.id
@@ -72,8 +69,8 @@ function getStreamByID(req, res, next) {
  * @param {Express.Response} res 
  * @param {*} next 
  */
-function getStreamByName(req, res, next) {
-  const relaySession = Array.from(this.sessions.values()).filter(
+function getStreamByName(req: Request, res: Response, next: NextFunction) {
+  const relaySession = Array.from(context.sessions.values()).filter(
     (session) =>
       session.constructor.name === 'NodeRelaySession' &&
       req.params.app === session.conf.app &&
@@ -96,12 +93,12 @@ function getStreamByName(req, res, next) {
  * @param {Express.Response} res 
  * @param {*} next 
  */
-async function relayStream(req, res, next) {
+async function relayStream(req: Request, res: Response, next: NextFunction) {
   let path = req.body.path;
   let url = req.body.url;
   if (path && url) {
-    process.nextTick(() => this.nodeEvent.emit('relayTask', path, url));
-    let ret = await once(this.nodeEvent, 'relayTaskDone');
+    process.nextTick(() => context.nodeEvent.emit('relayTask', path, url));
+    let ret = await once(context.nodeEvent, 'relayTaskDone');
     res.send(ret[0]);
   } else {
     res.sendStatus(400);
@@ -115,14 +112,14 @@ async function relayStream(req, res, next) {
  * @param {Express.Response} res 
  * @param {*} next 
  */
-async function pullStream(req, res, next) {
+async function pullStream(req: Request, res: Response, next: NextFunction) {
   let url = req.body.url;
   let app = req.body.app;
   let name = req.body.name;
   let rtsp_transport = req.body.rtsp_transport ? req.body.rtsp_transport : null;
   if (url && app && name) {
-    process.nextTick(() => this.nodeEvent.emit('relayPull', url, app, name, rtsp_transport));
-    let ret = await once(this.nodeEvent, 'relayPullDone');
+    process.nextTick(() => context.nodeEvent.emit('relayPull', url, app, name, rtsp_transport));
+    let ret = await once(context.nodeEvent, 'relayPullDone');
     res.send(ret[0]);
 
   } else {
@@ -136,13 +133,13 @@ async function pullStream(req, res, next) {
  * @param {Express.Response} res 
  * @param {*} next 
  */
-async function pushStream(req, res, next) {
+async function pushStream(req: Request, res: Response, next: NextFunction) {
   let url = req.body.url;
   let app = req.body.app;
   let name = req.body.name;
   if (url && app && name) {
-    process.nextTick(() => this.nodeEvent.emit('relayPush', url, app, name));
-    let ret = await once(this.nodeEvent, 'relayPushDone');
+    process.nextTick(() => context.nodeEvent.emit('relayPush', url, app, name));
+    let ret = await once(context.nodeEvent, 'relayPushDone');
     res.send(ret[0]);
   } else {
     res.sendStatus(400);
@@ -155,8 +152,8 @@ async function pushStream(req, res, next) {
  * @param {Express.Response} res 
  * @param {*} next 
  */
-function delStream(req, res, next) {
-  let relaySession = this.sessions.get(req.params.id);
+function delStream(req: Request, res: Response, next: NextFunction) {
+  let relaySession = context.sessions.get(req.params.id);
   if (relaySession) {
     relaySession.end();
     res.sendStatus(200);

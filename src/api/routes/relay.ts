@@ -1,7 +1,7 @@
 import express from 'express';
 import relayController from '../controllers/relay';
 
-export default (context) => {
+export default (context: any) => {
   let router = express.Router();
   router.get('/', relayController.getStreams.bind(context));
   router.get('/:id', relayController.getStreamByID.bind(context));

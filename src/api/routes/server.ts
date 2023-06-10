@@ -1,7 +1,7 @@
 import express from 'express';
-import serverController from '../controllers/server';
+import * as serverController from '../controllers/server';
 
-export default (context) => {
+export default (context: any) => {
   let router = express.Router();
   router.get('/', serverController.getInfo.bind(context));
   return router;
