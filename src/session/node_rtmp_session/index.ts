@@ -1,3 +1,5 @@
+import type { TLSSocket } from 'tls';
+import type { Socket } from 'net';
 import QueryString from 'querystring';
 
 import {
@@ -5,21 +7,19 @@ import {
 } from '../../processor/node_core_av';
 import { AUDIO_SOUND_RATE, AUDIO_CODEC_NAME, VIDEO_CODEC_NAME } from '../../processor/node_core_av';
 import * as AMF from '../../processor/node_core_amf';
-import Handshake from '../../node_rtmp_handshake';
+import Handshake from './node_rtmp_handshake';
 import NodeCoreUtils from '../../node_core_utils';
 import context from '../../node_core_ctx';
 import Logger from '../../node_core_logger';
 
 import NodeFlvSession from '../node_flv_session';
-import { createRtmpPacket } from './utils';
+
+import { IRtmpPacket, createRtmpPacket } from './utils';
+import { RTMP_HANDSHAKE } from './rtmp';
 
 const N_CHUNK_STREAM = 8;
 const RTMP_VERSION = 3;
 const RTMP_HANDSHAKE_SIZE = 1536;
-const RTMP_HANDSHAKE_UNINIT = 0;
-const RTMP_HANDSHAKE_0 = 1;
-const RTMP_HANDSHAKE_1 = 2;
-const RTMP_HANDSHAKE_2 = 3;
 
 const RTMP_PARSE_INIT = 0;
 const RTMP_PARSE_BASIC_HEADER = 1;
@@ -114,20 +114,17 @@ const RtmpPacket = {
 
 class NodeRtmpSession {
   public config: any;
-  public socket: any;
+  public socket: Socket | TLSSocket;
   public res: any;
   public id: any;
   public ip: any;
   public TAG: any;
   public handshakePayload: any;
-  public handshakeState: any;
-  public handshakeBytes: any;
-  public parserBuffer: any;
+
+  public parserBuffer: Buffer;
   public parserState: any;
   public parserBytes: any;
   public parserBasicBytes: any;
-  public parserPacket: any;
-  public inPackets: any;
   public inChunkSize: any;
   public outChunkSize: any;
   public pingTime: any;
@@ -180,7 +177,12 @@ class NodeRtmpSession {
   public objectEncoding: any;
   public connectTime: any;
 
-  constructor(config: any, socket: any) {
+  private inPackets: Map<number, IRtmpPacket>;
+  private parserPacket: IRtmpPacket | null;
+  private handshakeState: RTMP_HANDSHAKE;
+  private handshakeBytes: number;
+
+  constructor(config: any, socket: Socket | TLSSocket) {
     this.config = config;
     this.socket = socket;
     this.res = socket;
@@ -189,7 +191,7 @@ class NodeRtmpSession {
     this.TAG = 'rtmp';
 
     this.handshakePayload = Buffer.alloc(RTMP_HANDSHAKE_SIZE);
-    this.handshakeState = RTMP_HANDSHAKE_UNINIT;
+    this.handshakeState = RTMP_HANDSHAKE.UNINIT;
     this.handshakeBytes = 0;
 
     this.parserBuffer = Buffer.alloc(MAX_CHUNK_HEADER);
@@ -255,7 +257,7 @@ class NodeRtmpSession {
     context.sessions.set(this.id, this);
   }
 
-  run() {
+  public run() {
     this.socket.on('data', this.onSocketData.bind(this));
     this.socket.on('close', this.onSocketClose.bind(this));
     this.socket.on('error', this.onSocketError.bind(this));
@@ -300,17 +302,17 @@ class NodeRtmpSession {
     }
   }
 
-  onSocketClose() {
+  private onSocketClose() {
     // Logger.log('onSocketClose');
     this.stop();
   }
 
-  onSocketError(e: any) {
+  private onSocketError(e: any) {
     // Logger.log('onSocketError', e);
     this.stop();
   }
 
-  onSocketTimeout() {
+  private onSocketTimeout() {
     // Logger.log('onSocketTimeout');
     this.stop();
   }
@@ -320,35 +322,38 @@ class NodeRtmpSession {
    * @param {Buffer} data 
    * @returns 
    */
-  onSocketData(data: any) {
+  private onSocketData(data: Buffer) {
     let bytes = data.length;
     let p = 0;
     let n = 0;
     while (bytes > 0) {
       switch (this.handshakeState) {
-        case RTMP_HANDSHAKE_UNINIT:
+        case RTMP_HANDSHAKE.UNINIT:
           // Logger.log('RTMP_HANDSHAKE_UNINIT');
-          this.handshakeState = RTMP_HANDSHAKE_0;
+          this.handshakeState = RTMP_HANDSHAKE.HANDSHAKE_0;
           this.handshakeBytes = 0;
           bytes -= 1;
           p += 1;
           break;
-        case RTMP_HANDSHAKE_0:
+        case RTMP_HANDSHAKE.HANDSHAKE_0:
           // Logger.log('RTMP_HANDSHAKE_0');
-          n = RTMP_HANDSHAKE_SIZE - this.handshakeBytes;
-          n = n <= bytes ? n : bytes;
+          // n = RTMP_HANDSHAKE_SIZE - this.handshakeBytes;
+          // n = n <= bytes ? n : bytes;
+
+          n = Math.min(RTMP_HANDSHAKE_SIZE - this.handshakeBytes, bytes);
+
           data.copy(this.handshakePayload, this.handshakeBytes, p, p + n);
           this.handshakeBytes += n;
           bytes -= n;
           p += n;
           if (this.handshakeBytes === RTMP_HANDSHAKE_SIZE) {
-            this.handshakeState = RTMP_HANDSHAKE_1;
+            this.handshakeState = RTMP_HANDSHAKE.HANDSHAKE_1;
             this.handshakeBytes = 0;
             let s0s1s2 = Handshake.generateS0S1S2(this.handshakePayload);
             this.socket.write(s0s1s2);
           }
           break;
-        case RTMP_HANDSHAKE_1:
+        case RTMP_HANDSHAKE.HANDSHAKE_1:
           // Logger.log('RTMP_HANDSHAKE_1');
           n = RTMP_HANDSHAKE_SIZE - this.handshakeBytes;
           n = n <= bytes ? n : bytes;
@@ -357,12 +362,12 @@ class NodeRtmpSession {
           bytes -= n;
           p += n;
           if (this.handshakeBytes === RTMP_HANDSHAKE_SIZE) {
-            this.handshakeState = RTMP_HANDSHAKE_2;
+            this.handshakeState = RTMP_HANDSHAKE.HANDSHAKE_2;
             this.handshakeBytes = 0;
             this.handshakePayload = null;
           }
           break;
-        case RTMP_HANDSHAKE_2:
+        case RTMP_HANDSHAKE.HANDSHAKE_2:
         default:
           // Logger.log('RTMP_HANDSHAKE_2');
           return this.rtmpChunkRead(data, p, bytes);
@@ -405,12 +410,8 @@ class NodeRtmpSession {
     return out;
   }
 
-  /**
-   * rtmpChunksCreate
-   * @param {RtmpPacket} packet 
-   * @returns 
-   */
-  rtmpChunksCreate(packet: any) {
+  private rtmpChunksCreate(packet: IRtmpPacket) {
+    // console.log("rtmpChunksCreate", packet);
     let header = packet.header;
     let payload = packet.payload;
     let payloadSize = header.length;
@@ -511,6 +512,10 @@ class NodeRtmpSession {
           }
           break;
         case RTMP_PARSE_EXTENDED_TIMESTAMP:
+          if (!this.parserPacket) {
+            throw new Error("this.parserPacket is null");
+          }
+
           size = rtmpHeaderSize[this.parserPacket.header.fmt] + this.parserBasicBytes;
           if (this.parserPacket.header.timestamp === 0xffffff) size += 4;
           while (this.parserBytes < size && offset < bytes) {
@@ -535,6 +540,10 @@ class NodeRtmpSession {
           }
           break;
         case RTMP_PARSE_PAYLOAD:
+          if (!this.parserPacket) {
+            throw new Error("this.parserPacket is null");
+          }
+
           size = Math.min(this.inChunkSize - (this.parserPacket.bytes % this.inChunkSize), this.parserPacket.header.length - this.parserPacket.bytes);
           size = Math.min(size, bytes - offset);
           if (size > 0) {
@@ -587,16 +596,28 @@ class NodeRtmpSession {
     } else {
       cid = this.parserBuffer[0] & 0x3f;
     }
-    let hasp = this.inPackets.has(cid);
-    if (!hasp) {
-      this.parserPacket = RtmpPacket.create(fmt, cid);
-      this.inPackets.set(cid, this.parserPacket);
+
+    const packet = this.inPackets.get(cid);
+
+    if (!packet) {
+      const _packet = RtmpPacket.create(fmt, cid) as any;
+      this.parserPacket = _packet;
+      this.inPackets.set(cid, _packet);
     } else {
-      this.parserPacket = this.inPackets.get(cid);
+      this.parserPacket = packet;
     }
+
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
     this.parserPacket.header.fmt = fmt;
     this.parserPacket.header.cid = cid;
     this.rtmpChunkMessageHeaderRead();
+
+    if (this.parserPacket.header.type === undefined) {
+      throw new Error("this.parserPacket.header.type  is undefined");
+    }
 
     if (this.parserPacket.header.type > RTMP_TYPE_METADATA) {
       Logger.error('rtmp packet parse error.', this.parserPacket);
@@ -604,7 +625,12 @@ class NodeRtmpSession {
     }
   }
 
-  rtmpChunkMessageHeaderRead() {
+  private rtmpChunkMessageHeaderRead() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     let offset = this.parserBasicBytes;
 
     // timestamp / delta
@@ -624,10 +650,19 @@ class NodeRtmpSession {
       this.parserPacket.header.stream_id = this.parserBuffer.readUInt32LE(offset);
       offset += 4;
     }
+
+    console.log("rtmpChunkMessageHeaderRead.end", this.parserPacket)
+
+
     return offset;
   }
 
   rtmpPacketAlloc() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     if (this.parserPacket.capacity < this.parserPacket.header.length) {
       this.parserPacket.payload = Buffer.alloc(this.parserPacket.header.length + 1024);
       this.parserPacket.capacity = this.parserPacket.header.length + 1024;
@@ -635,6 +670,10 @@ class NodeRtmpSession {
   }
 
   rtmpHandler() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
     switch (this.parserPacket.header.type) {
       case RTMP_TYPE_SET_CHUNK_SIZE:
       case RTMP_TYPE_ABORT:
@@ -660,6 +699,11 @@ class NodeRtmpSession {
   }
 
   rtmpControlHandler() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     let payload = this.parserPacket.payload;
     switch (this.parserPacket.header.type) {
       case RTMP_TYPE_SET_CHUNK_SIZE:
@@ -682,6 +726,11 @@ class NodeRtmpSession {
   rtmpEventHandler() { }
 
   rtmpAudioHandler() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     let payload = this.parserPacket.payload.slice(0, this.parserPacket.header.length);
     let sound_format = (payload[0] >> 4) & 0x0f;
     let sound_type = payload[0] & 0x01;
@@ -795,6 +844,11 @@ class NodeRtmpSession {
   }
 
   rtmpVideoHandler() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     let payload = this.parserPacket.payload.slice(0, this.parserPacket.header.length);
     let isExHeader = (payload[0] >> 4 & 0b1000) !== 0;
     let frame_type = payload[0] >> 4 & 0b0111;
@@ -944,6 +998,11 @@ class NodeRtmpSession {
   }
 
   rtmpDataHandler() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     let offset = this.parserPacket.header.type === RTMP_TYPE_FLEX_STREAM ? 1 : 0;
     let payload = this.parserPacket.payload.slice(offset, this.parserPacket.header.length);
     let dataMessage = AMF.decodeAmf0Data(payload);
@@ -997,6 +1056,10 @@ class NodeRtmpSession {
   }
 
   rtmpInvokeHandler() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
     let offset = this.parserPacket.header.type === RTMP_TYPE_FLEX_MESSAGE ? 1 : 0;
     let payload = this.parserPacket.payload.slice(offset, this.parserPacket.header.length);
     let invokeMessage = AMF.decodeAmf0Cmd(payload);
@@ -1144,7 +1207,8 @@ class NodeRtmpSession {
     // packet.header.length = packet.payload.length;
 
     const payload = Buffer.from([
-      0, 6, (currentTimestamp >> 24) & 0xff,
+      0, 6,
+      (currentTimestamp >> 24) & 0xff,
       (currentTimestamp >> 16) & 0xff,
       (currentTimestamp >> 8) & 0xff,
       currentTimestamp & 0xff]);
@@ -1229,6 +1293,11 @@ class NodeRtmpSession {
   }
 
   onPublish(invokeMessage: any) {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
@@ -1274,6 +1343,11 @@ class NodeRtmpSession {
   }
 
   onPlay(invokeMessage: any) {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
@@ -1461,6 +1535,11 @@ class NodeRtmpSession {
   }
 
   onCloseStream() {
+    if (!this.parserPacket) {
+      throw new Error("this.parserPacket is null");
+    }
+
+
     //red5-publisher
     let closeStream = { streamId: this.parserPacket.header.stream_id };
     this.onDeleteStream(closeStream);

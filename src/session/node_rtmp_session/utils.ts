@@ -7,7 +7,7 @@ type IParams = {
     payload: Buffer;
 }
 
-type IRtmpPacket = {
+export type IRtmpPacket = {
     header: {
         fmt: number,
         cid: number,
